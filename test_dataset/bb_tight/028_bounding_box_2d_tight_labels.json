@@ -1,1 +1,14 @@
-{"2": {"class": "prop_general"}, "3": {"class": "klt"}, "4": {"class": "stillage"}, "5": {"class": "transporter"}}
+{
+    "2": {
+        "class": "pallet"
+    },
+    "3": {
+        "class": "klt"
+    },
+    "4": {
+        "class": "stillage"
+    },
+    "5": {
+        "class": "transporter"
+    }
+}

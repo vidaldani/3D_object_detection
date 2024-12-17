@@ -1,1 +1,11 @@
-{"1": {"class": "klt"}, "2": {"class": "prop_general"}, "3": {"class": "stillage"}}
+{
+    "1": {
+        "class": "klt"
+    },
+    "2": {
+        "class": "pallet"
+    },
+    "3": {
+        "class": "stillage"
+    }
+}

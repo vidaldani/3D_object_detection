@@ -1,1 +1,8 @@
-{"0": {"class": "prop_general"}, "1": {"class": "transporter"}}
+{
+    "0": {
+        "class": "pallet"
+    },
+    "1": {
+        "class": "transporter"
+    }
+}

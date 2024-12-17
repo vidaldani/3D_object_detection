@@ -1,1 +1,8 @@
-{"3": {"class": "stillage"}, "5": {"class": "transporter"}}
+{
+    "3": {
+        "class": "stillage"
+    },
+    "5": {
+        "class": "transporter"
+    }
+}

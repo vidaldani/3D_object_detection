@@ -12,7 +12,7 @@
         "class": "stillage"
     },
     "(255, 25, 197, 255)": {
-        "class": "prop_general"
+        "class": "pallet"
     },
     "(140, 25, 255, 255)": {
         "class": "transporter"

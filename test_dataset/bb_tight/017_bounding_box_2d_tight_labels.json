@@ -1,1 +1,11 @@
-{"0": {"class": "pallet_truck"}, "1": {"class": "prop_general"}, "2": {"class": "klt"}}
+{
+    "0": {
+        "class": "pallet_truck"
+    },
+    "1": {
+        "class": "pallet"
+    },
+    "2": {
+        "class": "klt"
+    }
+}

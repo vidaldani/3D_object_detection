@@ -1,1 +1,8 @@
-{"1": {"class": "prop_general"}, "4": {"class": "stillage"}}
+{
+    "1": {
+        "class": "pallet"
+    },
+    "4": {
+        "class": "stillage"
+    }
+}

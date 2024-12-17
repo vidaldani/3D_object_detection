@@ -1,1 +1,11 @@
-{"0": {"class": "pallet_truck"}, "2": {"class": "klt"}, "3": {"class": "stillage"}}
+{
+    "0": {
+        "class": "pallet_truck"
+    },
+    "2": {
+        "class": "klt"
+    },
+    "3": {
+        "class": "stillage"
+    }
+}

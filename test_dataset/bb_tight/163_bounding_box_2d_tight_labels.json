@@ -1,1 +1,14 @@
-{"0": {"class": "forklift"}, "1": {"class": "prop_general"}, "2": {"class": "transporter"}, "5": {"class": "klt"}}
+{
+    "0": {
+        "class": "forklift"
+    },
+    "1": {
+        "class": "pallet"
+    },
+    "2": {
+        "class": "transporter"
+    },
+    "5": {
+        "class": "klt"
+    }
+}

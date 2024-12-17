@@ -1,1 +1,8 @@
-{"(0, 0, 0, 0)": {"class": "BACKGROUND"}, "(0, 0, 0, 255)": {"class": "UNLABELLED"}}
+{
+    "(0, 0, 0, 0)": {
+        "class": "BACKGROUND"
+    },
+    "(0, 0, 0, 255)": {
+        "class": "UNLABELLED"
+    }
+}
