@@ -1,0 +1,25 @@
+{
+	"folder": "ply_output",
+	"filename": "frame_0062.ply",
+	"path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0062.ply",
+	"objects": [
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": 0.28448849,
+				"y": -0.19088239,
+				"z": -1.21596316
+			},
+			"dimensions": {
+				"length": 1.28219068,
+				"width": 0.16301132,
+				"height": 0.89766059
+			},
+			"rotations": {
+				"x": 0,
+				"y": 40.81726234,
+				"z": 0.21099422
+			}
+		}
+	]
+}

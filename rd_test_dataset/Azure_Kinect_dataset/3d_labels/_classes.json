@@ -1,0 +1,37 @@
+{
+    "classes": [
+        {
+            "name": "forklift",
+            "id": 0,
+            "color": "#ff0000"
+        },
+        {
+            "name": "pallet_truck",
+            "id": 1,
+            "color": "#bccc66"
+        },
+        {
+            "name": "pallet",
+            "id": 2,
+            "color": "#55aaff"
+        },
+        {
+            "name": "small_load_carrier",
+            "id": 3,
+            "color": "#1fcc00"
+        },
+        {
+            "name": "stillage",
+            "id": 4,
+            "color": "#e500d3"
+        }
+    ],
+    "default": 0,
+    "type": "object_detection",
+    "format": "centroid_rel",
+    "created_with": {
+        "name": "labelCloud",
+        "version": "1.1.1"
+    }
+}
+

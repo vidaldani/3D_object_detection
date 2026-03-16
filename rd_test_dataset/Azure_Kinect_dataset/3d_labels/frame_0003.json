@@ -1,0 +1,25 @@
+{
+	"folder": "ply_output",
+	"filename": "frame_0003.ply",
+	"path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0003.ply",
+	"objects": [
+		{
+			"name": "forklift",
+			"centroid": {
+				"x": -0.82843491,
+				"y": 0.21972897,
+				"z": -2.31111498
+			},
+			"dimensions": {
+				"length": 2.58,
+				"width": 2.29,
+				"height": 1.14
+			},
+			"rotations": {
+				"x": 0.5,
+				"y": 324.5,
+				"z": 358.5
+			}
+		}
+	]
+}

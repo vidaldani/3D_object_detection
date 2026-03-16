@@ -1,0 +1,43 @@
+{
+	"folder": "ply_output",
+	"filename": "frame_0043.ply",
+	"path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0043.ply",
+	"objects": [
+		{
+			"name": "small load carrier",
+			"centroid": {
+				"x": -0.30392755,
+				"y": -0.29261308,
+				"z": -0.86738874
+			},
+			"dimensions": {
+				"length": 0.33188747,
+				"width": 0.13539664,
+				"height": 0.20900054
+			},
+			"rotations": {
+				"x": 358.0,
+				"y": 44.71078159,
+				"z": 355.94426368
+			}
+		},
+		{
+			"name": "small load carrier",
+			"centroid": {
+				"x": 0.10835539,
+				"y": -0.24919138,
+				"z": -1.26173568
+			},
+			"dimensions": {
+				"length": 0.45690118,
+				"width": 0.27101979,
+				"height": 0.32699916
+			},
+			"rotations": {
+				"x": 0,
+				"y": 44.64690084,
+				"z": 356.5308612
+			}
+		}
+	]
+}

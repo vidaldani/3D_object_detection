@@ -1,0 +1,97 @@
+{
+	"folder": "ply_output",
+	"filename": "frame_0018.ply",
+	"path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0018.ply",
+	"objects": [
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": -0.5407659,
+				"y": 0.44184038,
+				"z": -1.45895411
+			},
+			"dimensions": {
+				"length": 0.70551635,
+				"width": 0.1854105,
+				"height": 0.88183718
+			},
+			"rotations": {
+				"x": 2.0,
+				"y": 261.91822586,
+				"z": 356.15403999
+			}
+		},
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": -0.56325165,
+				"y": 0.27608437,
+				"z": -1.50036395
+			},
+			"dimensions": {
+				"length": 0.72,
+				"width": 0.13,
+				"height": 0.9
+			},
+			"rotations": {
+				"x": 0.0,
+				"y": 262.0,
+				"z": 358.5
+			}
+		},
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": 0.33689207,
+				"y": 0.54470417,
+				"z": -1.1579172
+			},
+			"dimensions": {
+				"length": 0.42,
+				"width": 0.16,
+				"height": 0.75
+			},
+			"rotations": {
+				"x": 0,
+				"y": 260.0,
+				"z": 0
+			}
+		},
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": 0.3408998,
+				"y": 0.40690481,
+				"z": -1.18481721
+			},
+			"dimensions": {
+				"length": 0.45,
+				"width": 0.13,
+				"height": 0.75
+			},
+			"rotations": {
+				"x": 0,
+				"y": 261.0,
+				"z": 359.5
+			}
+		},
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": 0.36224585,
+				"y": 0.27099793,
+				"z": -1.25423877
+			},
+			"dimensions": {
+				"length": 0.6,
+				"width": 0.13,
+				"height": 0.78
+			},
+			"rotations": {
+				"x": 0,
+				"y": 261.0,
+				"z": 0
+			}
+		}
+	]
+}

@@ -1,0 +1,61 @@
+{
+	"folder": "ply_output",
+	"filename": "frame_0048.ply",
+	"path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0048.ply",
+	"objects": [
+		{
+			"name": "stillage",
+			"centroid": {
+				"x": -0.60039779,
+				"y": -0.42052141,
+				"z": -1.42899216
+			},
+			"dimensions": {
+				"length": 0.86645361,
+				"width": 0.97723613,
+				"height": 0.17000328
+			},
+			"rotations": {
+				"x": 0,
+				"y": 18.51064838,
+				"z": 0.15973266
+			}
+		},
+		{
+			"name": "stillage",
+			"centroid": {
+				"x": 0.2824554,
+				"y": -0.40934063,
+				"z": -1.71097795
+			},
+			"dimensions": {
+				"length": 0.8655614,
+				"width": 0.97203816,
+				"height": 0.20601639
+			},
+			"rotations": {
+				"x": 0,
+				"y": 17.40029486,
+				"z": 0.49351666
+			}
+		},
+		{
+			"name": "stillage",
+			"centroid": {
+				"x": 0.18318554,
+				"y": 0.88170832,
+				"z": -1.68251476
+			},
+			"dimensions": {
+				"length": 0.85826962,
+				"width": 0.37039341,
+				"height": 0.21207627
+			},
+			"rotations": {
+				"x": 0,
+				"y": 14.16462998,
+				"z": 2.72247408
+			}
+		}
+	]
+}
