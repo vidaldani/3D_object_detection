@@ -1,25 +1,25 @@
 {
-	"folder": "ply_output",
-	"filename": "frame_0001.ply",
-	"path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0001.ply",
-	"objects": [
-		{
-			"name": "forklift",
-			"centroid": {
-				"x": 1.05923898,
-				"y": -0.05598852,
-				"z": -2.47104232
-			},
-			"dimensions": {
-				"length": 1.83,
-				"width": 1.51,
-				"height": 1.26
-			},
-			"rotations": {
-				"x": 352.0,
-				"y": 306.0,
-				"z": 187.0
-			}
-		}
-	]
+    "folder": "ply_output",
+    "filename": "frame_0001.ply",
+    "path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0001.ply",
+    "objects": [
+        {
+            "name": "forklift",
+            "centroid": {
+                "x": 1.05923898,
+                "y": 0.05598852,
+                "z": 2.47104232
+            },
+            "dimensions": {
+                "length": 1.83,
+                "width": 1.51,
+                "height": 1.26
+            },
+            "rotations": {
+                "x": 352.0,
+                "y": 144.0,
+                "z": 187.0
+            }
+        }
+    ]
 }

@@ -1,43 +1,43 @@
 {
-	"folder": "ply_output",
-	"filename": "frame_0047.ply",
-	"path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0047.ply",
-	"objects": [
-		{
-			"name": "stillage",
-			"centroid": {
-				"x": -0.1528391,
-				"y": -0.35325606,
-				"z": -1.37508098
-			},
-			"dimensions": {
-				"length": 0.8732724,
-				"width": 0.85305193,
-				"height": 0.1561395
-			},
-			"rotations": {
-				"x": 0,
-				"y": 359.7317311,
-				"z": 359.56103474
-			}
-		},
-		{
-			"name": "stillage",
-			"centroid": {
-				"x": 0.80036171,
-				"y": -0.34618345,
-				"z": -1.33035402
-			},
-			"dimensions": {
-				"length": 0.87889825,
-				"width": 0.82568253,
-				"height": 0.10699237
-			},
-			"rotations": {
-				"x": 0,
-				"y": 358.90810615,
-				"z": 0.03716606
-			}
-		}
-	]
+    "folder": "ply_output",
+    "filename": "frame_0047.ply",
+    "path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0047.ply",
+    "objects": [
+        {
+            "name": "stillage",
+            "centroid": {
+                "x": -0.1528391,
+                "y": 0.35325606,
+                "z": 1.37508098
+            },
+            "dimensions": {
+                "length": 0.8732724,
+                "width": 0.85305193,
+                "height": 0.1561395
+            },
+            "rotations": {
+                "x": 0,
+                "y": 90.26826890000001,
+                "z": 359.56103474
+            }
+        },
+        {
+            "name": "stillage",
+            "centroid": {
+                "x": 0.80036171,
+                "y": 0.34618345,
+                "z": 1.33035402
+            },
+            "dimensions": {
+                "length": 0.87889825,
+                "width": 0.82568253,
+                "height": 0.10699237
+            },
+            "rotations": {
+                "x": 0,
+                "y": 91.09189385000002,
+                "z": 0.03716606
+            }
+        }
+    ]
 }

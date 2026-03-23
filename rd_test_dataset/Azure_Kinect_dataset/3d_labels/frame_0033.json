@@ -1,43 +1,43 @@
 {
-	"folder": "ply_output",
-	"filename": "frame_0033.ply",
-	"path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0033.ply",
-	"objects": [
-		{
-			"name": "small load carrier",
-			"centroid": {
-				"x": -0.11481303,
-				"y": -0.0261023,
-				"z": -3.22111168
-			},
-			"dimensions": {
-				"length": 0.34293883,
-				"width": 0.27803804,
-				"height": 0.33045853
-			},
-			"rotations": {
-				"x": 0,
-				"y": 283.15337742,
-				"z": 359.71839804
-			}
-		},
-		{
-			"name": "small load carrier",
-			"centroid": {
-				"x": -0.5969792,
-				"y": -0.07223586,
-				"z": -3.05109875
-			},
-			"dimensions": {
-				"length": 0.10162981,
-				"width": 0.16733614,
-				"height": 0.24235372
-			},
-			"rotations": {
-				"x": 0,
-				"y": 283.4869266,
-				"z": 358.89641426
-			}
-		}
-	]
+    "folder": "ply_output",
+    "filename": "frame_0033.ply",
+    "path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0033.ply",
+    "objects": [
+        {
+            "name": "small load carrier",
+            "centroid": {
+                "x": -0.11481303,
+                "y": 0.0261023,
+                "z": 3.22111168
+            },
+            "dimensions": {
+                "length": 0.34293883,
+                "width": 0.27803804,
+                "height": 0.33045853
+            },
+            "rotations": {
+                "x": 0,
+                "y": 166.84662257999997,
+                "z": 359.71839804
+            }
+        },
+        {
+            "name": "small load carrier",
+            "centroid": {
+                "x": -0.5969792,
+                "y": 0.07223586,
+                "z": 3.05109875
+            },
+            "dimensions": {
+                "length": 0.10162981,
+                "width": 0.16733614,
+                "height": 0.24235372
+            },
+            "rotations": {
+                "x": 0,
+                "y": 166.5130734,
+                "z": 358.89641426
+            }
+        }
+    ]
 }

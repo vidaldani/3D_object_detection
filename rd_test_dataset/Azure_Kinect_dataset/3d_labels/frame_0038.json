@@ -1,61 +1,61 @@
 {
-	"folder": "ply_output",
-	"filename": "frame_0038.ply",
-	"path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0038.ply",
-	"objects": [
-		{
-			"name": "small load carrier",
-			"centroid": {
-				"x": -0.17821431,
-				"y": 0.36969281,
-				"z": -2.04731029
-			},
-			"dimensions": {
-				"length": 0.62900637,
-				"width": 0.30115993,
-				"height": 0.45621313
-			},
-			"rotations": {
-				"x": 0,
-				"y": 198.64125269,
-				"z": 0.20317826
-			}
-		},
-		{
-			"name": "small load carrier",
-			"centroid": {
-				"x": 0.00832443,
-				"y": 0.79214678,
-				"z": -1.96248432
-			},
-			"dimensions": {
-				"length": 0.09024094,
-				"width": 0.32205627,
-				"height": 0.31056958
-			},
-			"rotations": {
-				"x": 0,
-				"y": 286.14312195,
-				"z": 357.07781947
-			}
-		},
-		{
-			"name": "small load carrier",
-			"centroid": {
-				"x": -0.47955243,
-				"y": 0.84755807,
-				"z": -1.81535283
-			},
-			"dimensions": {
-				"length": 0.62058796,
-				"width": 0.33922052,
-				"height": 0.16023564
-			},
-			"rotations": {
-				"x": 0,
-				"y": 17.19885063,
-				"z": 357.7117518
-			}
-		}
-	]
+    "folder": "ply_output",
+    "filename": "frame_0038.ply",
+    "path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0038.ply",
+    "objects": [
+        {
+            "name": "small load carrier",
+            "centroid": {
+                "x": -0.17821431,
+                "y": -0.36969281,
+                "z": 2.04731029
+            },
+            "dimensions": {
+                "length": 0.62900637,
+                "width": 0.30115993,
+                "height": 0.45621313
+            },
+            "rotations": {
+                "x": 0,
+                "y": 251.35874731,
+                "z": 0.20317826
+            }
+        },
+        {
+            "name": "small load carrier",
+            "centroid": {
+                "x": 0.00832443,
+                "y": -0.79214678,
+                "z": 1.96248432
+            },
+            "dimensions": {
+                "length": 0.09024094,
+                "width": 0.32205627,
+                "height": 0.31056958
+            },
+            "rotations": {
+                "x": 0,
+                "y": 163.85687804999998,
+                "z": 357.07781947
+            }
+        },
+        {
+            "name": "small load carrier",
+            "centroid": {
+                "x": -0.47955243,
+                "y": -0.84755807,
+                "z": 1.81535283
+            },
+            "dimensions": {
+                "length": 0.62058796,
+                "width": 0.33922052,
+                "height": 0.16023564
+            },
+            "rotations": {
+                "x": 0,
+                "y": 72.80114937000002,
+                "z": 357.7117518
+            }
+        }
+    ]
 }

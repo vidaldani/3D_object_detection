@@ -1,43 +1,43 @@
 {
-	"folder": "ply_output",
-	"filename": "frame_0060.ply",
-	"path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0060.ply",
-	"objects": [
-		{
-			"name": "pallet truck",
-			"centroid": {
-				"x": 0.01913183,
-				"y": 0.17722977,
-				"z": -0.93087897
-			},
-			"dimensions": {
-				"length": 0.46294463,
-				"width": 0.89310115,
-				"height": 0.57841931
-			},
-			"rotations": {
-				"x": 0,
-				"y": 291.72432042,
-				"z": 359.42520767
-			}
-		},
-		{
-			"name": "pallet",
-			"centroid": {
-				"x": -0.1994684,
-				"y": -0.1957213,
-				"z": -1.3700214
-			},
-			"dimensions": {
-				"length": 0.77851474,
-				"width": 0.1700355,
-				"height": 0.86544202
-			},
-			"rotations": {
-				"x": 0,
-				"y": 289.56289941,
-				"z": 1.42164148
-			}
-		}
-	]
+    "folder": "ply_output",
+    "filename": "frame_0060.ply",
+    "path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0060.ply",
+    "objects": [
+        {
+            "name": "pallet truck",
+            "centroid": {
+                "x": 0.01913183,
+                "y": -0.17722977,
+                "z": 0.93087897
+            },
+            "dimensions": {
+                "length": 0.46294463,
+                "width": 0.89310115,
+                "height": 0.57841931
+            },
+            "rotations": {
+                "x": 0,
+                "y": 158.27567957999997,
+                "z": 359.42520767
+            }
+        },
+        {
+            "name": "pallet",
+            "centroid": {
+                "x": -0.1994684,
+                "y": 0.1957213,
+                "z": 1.3700214
+            },
+            "dimensions": {
+                "length": 0.77851474,
+                "width": 0.1700355,
+                "height": 0.86544202
+            },
+            "rotations": {
+                "x": 0,
+                "y": 160.43710059,
+                "z": 1.42164148
+            }
+        }
+    ]
 }
