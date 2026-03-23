@@ -1,0 +1,20 @@
+2025-06-24 16:54:53,069 - INFO    : Set export strategy to CentroidFormat.
+2025-06-24 16:54:53,069 - INFO    : Saving rotations relatively to positve x-axis in radians (-pi..+pi).
+2025-06-24 16:55:44,013 - WARNING : Point cloud path pointclouds is not a valid directory.
+2025-06-24 16:55:59,428 - INFO    : Loading point cloud from /home/tumwfml-ubunt6/.local/lib/python3.10/site-packages/labelCloud/resources/labelCloud_icon.pcd using Open3DHandler.
+2025-06-24 16:55:59,433 - INFO    : ======================================================================================== Loading labelCloud_icon.pcd =========================================================================================
+2025-06-24 16:55:59,438 - INFO    : Successfully loaded point cloud from /home/tumwfml-ubunt6/.local/lib/python3.10/site-packages/labelCloud/resources/labelCloud_icon.pcd!
+2025-06-24 16:55:59,439 - INFO    : Number of Points:       12034          
+2025-06-24 16:55:59,440 - INFO    : Number of Colors:       12034          
+2025-06-24 16:55:59,440 - INFO    : Point Cloud Center:     [4.98 3.57 1.2 ]        
+2025-06-24 16:55:59,440 - INFO    : Point Cloud Minimums:   [0.96 0.96 0.9 ]        
+2025-06-24 16:55:59,440 - INFO    : Point Cloud Maximums:   [9.1  5.72 1.5 ]        
+2025-06-24 16:55:59,440 - INFO    : Initial Translation:    [ -4.98  -3.57 -10.65]  
+2025-06-24 16:55:59,441 - INFO    : ==============================================================================================================================================================================================================
+2025-06-24 16:55:59,508 - INFO    : Intialized widget.
+2025-06-24 16:55:59,508 - INFO    : Resized widget.
+2025-06-24 16:55:59,664 - INFO    : Showing GUI...
+2025-06-24 16:56:05,493 - WARNING : No point clouds to save labels for!
+2025-06-24 16:56:05,494 - INFO    : Loading custom point cloud...
+2025-06-24 16:56:12,651 - INFO    : Closing window after saving ...
+2025-06-24 16:56:12,651 - WARNING : No point clouds to save labels for!
