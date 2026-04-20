@@ -1,367 +1,367 @@
 {
-    "folder": "ply_output",
-    "filename": "frame_0015.ply",
-    "path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0015.ply",
-    "objects": [
-        {
-            "name": "pallet",
-            "centroid": {
-                "x": 0.68827277,
-                "y": 0.81188119,
-                "z": 2.79907851
-            },
-            "dimensions": {
-                "length": 0.29084297,
-                "width": 0.8219199,
-                "height": 0.15418169
-            },
-            "rotations": {
-                "x": 277.5,
-                "y": 134.41460825000001,
-                "z": 174.71518921
-            }
-        },
-        {
-            "name": "pallet truck",
-            "centroid": {
-                "x": 1.24691309,
-                "y": 0.650722,
-                "z": 2.16469951
-            },
-            "dimensions": {
-                "length": 0.48,
-                "width": 0.43,
-                "height": 0.69
-            },
-            "rotations": {
-                "x": 0,
-                "y": 222.0,
-                "z": 0
-            }
-        },
-        {
-            "name": "pallet",
-            "centroid": {
-                "x": -0.08644599,
-                "y": -0.44945982,
-                "z": 3.56944509
-            },
-            "dimensions": {
-                "length": 0.13172105,
-                "width": 0.16257149,
-                "height": 0.94775628
-            },
-            "rotations": {
-                "x": 0.0,
-                "y": 222.41771683,
-                "z": 0.618483
-            }
-        },
-        {
-            "name": "pallet",
-            "centroid": {
-                "x": -0.08314846,
-                "y": -0.29206262,
-                "z": 3.59860623
-            },
-            "dimensions": {
-                "length": 0.17586042,
-                "width": 0.13448725,
-                "height": 0.9366783
-            },
-            "rotations": {
-                "x": 0,
-                "y": 224.59315288,
-                "z": 1.13788282
-            }
-        },
-        {
-            "name": "pallet",
-            "centroid": {
-                "x": 0.76672625,
-                "y": -1.14326678,
-                "z": 3.08694811
-            },
-            "dimensions": {
-                "length": 0.59917807,
-                "width": 0.15493324,
-                "height": 0.80802531
-            },
-            "rotations": {
-                "x": 0,
-                "y": 218.37192504,
-                "z": 358.24797164
-            }
-        },
-        {
-            "name": "pallet",
-            "centroid": {
-                "x": 0.78273083,
-                "y": -0.99068155,
-                "z": 3.06042565
-            },
-            "dimensions": {
-                "length": 0.63264602,
-                "width": 0.12684425,
-                "height": 0.82885374
-            },
-            "rotations": {
-                "x": 5.0,
-                "y": 221.68238252,
-                "z": 353.38585853
-            }
-        },
-        {
-            "name": "pallet",
-            "centroid": {
-                "x": 0.77815869,
-                "y": -0.86931221,
-                "z": 3.08251677
-            },
-            "dimensions": {
-                "length": 0.67327489,
-                "width": 0.1352957,
-                "height": 0.81434027
-            },
-            "rotations": {
-                "x": 0,
-                "y": 224.38554716,
-                "z": 0.07885653
-            }
-        },
-        {
-            "name": "pallet",
-            "centroid": {
-                "x": 0.76985709,
-                "y": -0.74303216,
-                "z": 3.13809684
-            },
-            "dimensions": {
-                "length": 0.72,
-                "width": 0.1,
-                "height": 0.84
-            },
-            "rotations": {
-                "x": 0,
-                "y": 216.5,
-                "z": 0
-            }
-        },
-        {
-            "name": "pallet",
-            "centroid": {
-                "x": 0.76486599,
-                "y": -0.60455399,
-                "z": 3.10927478
-            },
-            "dimensions": {
-                "length": 0.69,
-                "width": 0.13,
-                "height": 0.81
-            },
-            "rotations": {
-                "x": 0,
-                "y": 221.0,
-                "z": 0
-            }
-        },
-        {
-            "name": "pallet",
-            "centroid": {
-                "x": 0.72467282,
-                "y": -0.47019865,
-                "z": 3.11663928
-            },
-            "dimensions": {
-                "length": 0.69,
-                "width": 0.13,
-                "height": 0.84
-            },
-            "rotations": {
-                "x": 0,
-                "y": 217.5,
-                "z": 359.5
-            }
-        },
-        {
-            "name": "pallet",
-            "centroid": {
-                "x": 0.64737859,
-                "y": -0.28091026,
-                "z": 3.04007876
-            },
-            "dimensions": {
-                "length": 0.45,
-                "width": 0.13,
-                "height": 0.87
-            },
-            "rotations": {
-                "x": 6.5,
-                "y": 215.5,
-                "z": 355.0
-            }
-        },
-        {
-            "name": "pallet",
-            "centroid": {
-                "x": 1.41582335,
-                "y": -1.14638941,
-                "z": 2.35113081
-            },
-            "dimensions": {
-                "length": 0.24,
-                "width": 0.16,
-                "height": 0.81
-            },
-            "rotations": {
-                "x": 0,
-                "y": 217.5,
-                "z": 358.5
-            }
-        },
-        {
-            "name": "pallet",
-            "centroid": {
-                "x": 1.42098584,
-                "y": -1.02879232,
-                "z": 2.30802398
-            },
-            "dimensions": {
-                "length": 0.27,
-                "width": 0.1,
-                "height": 0.75
-            },
-            "rotations": {
-                "x": 0,
-                "y": 216.5,
-                "z": 359.5
-            }
-        },
-        {
-            "name": "pallet",
-            "centroid": {
-                "x": 1.41191555,
-                "y": -0.87143386,
-                "z": 2.31469273
-            },
-            "dimensions": {
-                "length": 0.3,
-                "width": 0.13,
-                "height": 0.81
-            },
-            "rotations": {
-                "x": 0,
-                "y": 215.5,
-                "z": 0
-            }
-        },
-        {
-            "name": "pallet",
-            "centroid": {
-                "x": 1.36155154,
-                "y": -0.74961462,
-                "z": 2.30106338
-            },
-            "dimensions": {
-                "length": 0.42,
-                "width": 0.13,
-                "height": 0.81
-            },
-            "rotations": {
-                "x": 0,
-                "y": 211.0,
-                "z": 0
-            }
-        },
-        {
-            "name": "pallet",
-            "centroid": {
-                "x": 1.36270124,
-                "y": -0.59853368,
-                "z": 2.32717906
-            },
-            "dimensions": {
-                "length": 0.27,
-                "width": 0.13,
-                "height": 0.84
-            },
-            "rotations": {
-                "x": 0,
-                "y": 212.5,
-                "z": 0
-            }
-        },
-        {
-            "name": "pallet",
-            "centroid": {
-                "x": 1.33445539,
-                "y": -0.45183909,
-                "z": 2.3014134
-            },
-            "dimensions": {
-                "length": 0.3,
-                "width": 0.13,
-                "height": 0.81
-            },
-            "rotations": {
-                "x": 0,
-                "y": 216.5,
-                "z": 0
-            }
-        },
-        {
-            "name": "pallet",
-            "centroid": {
-                "x": 1.37767496,
-                "y": -0.25507064,
-                "z": 2.34006046
-            },
-            "dimensions": {
-                "length": 0.21,
-                "width": 0.1,
-                "height": 0.81
-            },
-            "rotations": {
-                "x": 11.5,
-                "y": 218.0,
-                "z": 348.0
-            }
-        },
-        {
-            "name": "pallet truck",
-            "centroid": {
-                "x": 0.74474629,
-                "y": 0.6565456,
-                "z": 2.69824753
-            },
-            "dimensions": {
-                "length": 0.48,
-                "width": 0.37,
-                "height": 0.66
-            },
-            "rotations": {
-                "x": 0,
-                "y": 223.0,
-                "z": 0.0
-            }
-        },
-        {
-            "name": "pallet",
-            "centroid": {
-                "x": 1.32135226,
-                "y": 0.766708,
-                "z": 2.2354802
-            },
-            "dimensions": {
-                "length": 0.3,
-                "width": 0.19,
-                "height": 0.81
-            },
-            "rotations": {
-                "x": 0,
-                "y": 220.0,
-                "z": 359.5
-            }
-        }
-    ]
+	"folder": "ply_output",
+	"filename": "frame_0015.ply",
+	"path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0015.ply",
+	"objects": [
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": 0.68827277,
+				"y": 0.81188119,
+				"z": 2.79907851
+			},
+			"dimensions": {
+				"length": 0.29084297,
+				"width": 0.8219199,
+				"height": 0.15418169
+			},
+			"rotations": {
+				"x": 0,
+				"y": 134.41460825000001,
+				"z": 0
+			}
+		},
+		{
+			"name": "pallet truck",
+			"centroid": {
+				"x": 1.24691309,
+				"y": 0.650722,
+				"z": 2.16469951
+			},
+			"dimensions": {
+				"length": 0.69,
+				"width": 0.48,
+				"height": 0.43
+			},
+			"rotations": {
+				"x": 0,
+				"y": 222.0,
+				"z": 0
+			}
+		},
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": -0.08644599,
+				"y": -0.44945982,
+				"z": 3.56944509
+			},
+			"dimensions": {
+				"length": 0.94775628,
+				"width": 0.13172105,
+				"height": 0.16257149
+			},
+			"rotations": {
+				"x": 0,
+				"y": 222.41771683,
+				"z": 0
+			}
+		},
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": -0.08314846,
+				"y": -0.29206262,
+				"z": 3.59860623
+			},
+			"dimensions": {
+				"length": 0.9366783,
+				"width": 0.17586042,
+				"height": 0.13448725
+			},
+			"rotations": {
+				"x": 0,
+				"y": 224.59315288,
+				"z": 0
+			}
+		},
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": 0.76672625,
+				"y": -1.14326678,
+				"z": 3.08694811
+			},
+			"dimensions": {
+				"length": 0.80802531,
+				"width": 0.59917807,
+				"height": 0.15493324
+			},
+			"rotations": {
+				"x": 0,
+				"y": 218.37192504,
+				"z": 0
+			}
+		},
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": 0.78273083,
+				"y": -0.99068155,
+				"z": 3.06042565
+			},
+			"dimensions": {
+				"length": 0.82885374,
+				"width": 0.63264602,
+				"height": 0.12684425
+			},
+			"rotations": {
+				"x": 0,
+				"y": 221.68238252,
+				"z": 0
+			}
+		},
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": 0.77815869,
+				"y": -0.86931221,
+				"z": 3.08251677
+			},
+			"dimensions": {
+				"length": 0.81434027,
+				"width": 0.67327489,
+				"height": 0.1352957
+			},
+			"rotations": {
+				"x": 0,
+				"y": 224.38554716,
+				"z": 0
+			}
+		},
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": 0.76985709,
+				"y": -0.74303216,
+				"z": 3.13809684
+			},
+			"dimensions": {
+				"length": 0.84,
+				"width": 0.72,
+				"height": 0.1
+			},
+			"rotations": {
+				"x": 0,
+				"y": 216.5,
+				"z": 0
+			}
+		},
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": 0.76486599,
+				"y": -0.60455399,
+				"z": 3.10927478
+			},
+			"dimensions": {
+				"length": 0.81,
+				"width": 0.69,
+				"height": 0.13
+			},
+			"rotations": {
+				"x": 0,
+				"y": 221.0,
+				"z": 0
+			}
+		},
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": 0.72467282,
+				"y": -0.47019865,
+				"z": 3.11663928
+			},
+			"dimensions": {
+				"length": 0.84,
+				"width": 0.69,
+				"height": 0.13
+			},
+			"rotations": {
+				"x": 0,
+				"y": 217.5,
+				"z": 0
+			}
+		},
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": 0.64737859,
+				"y": -0.28091026,
+				"z": 3.04007876
+			},
+			"dimensions": {
+				"length": 0.87,
+				"width": 0.45,
+				"height": 0.13
+			},
+			"rotations": {
+				"x": 0,
+				"y": 215.5,
+				"z": 0
+			}
+		},
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": 1.41582335,
+				"y": -1.14638941,
+				"z": 2.35113081
+			},
+			"dimensions": {
+				"length": 0.81,
+				"width": 0.24,
+				"height": 0.16
+			},
+			"rotations": {
+				"x": 0,
+				"y": 217.5,
+				"z": 0
+			}
+		},
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": 1.42098584,
+				"y": -1.02879232,
+				"z": 2.30802398
+			},
+			"dimensions": {
+				"length": 0.75,
+				"width": 0.27,
+				"height": 0.1
+			},
+			"rotations": {
+				"x": 0,
+				"y": 216.5,
+				"z": 0
+			}
+		},
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": 1.41191555,
+				"y": -0.87143386,
+				"z": 2.31469273
+			},
+			"dimensions": {
+				"length": 0.81,
+				"width": 0.3,
+				"height": 0.13
+			},
+			"rotations": {
+				"x": 0,
+				"y": 215.5,
+				"z": 0
+			}
+		},
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": 1.36155154,
+				"y": -0.74961462,
+				"z": 2.30106338
+			},
+			"dimensions": {
+				"length": 0.81,
+				"width": 0.42,
+				"height": 0.13
+			},
+			"rotations": {
+				"x": 0,
+				"y": 211.0,
+				"z": 0
+			}
+		},
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": 1.36270124,
+				"y": -0.59853368,
+				"z": 2.32717906
+			},
+			"dimensions": {
+				"length": 0.84,
+				"width": 0.27,
+				"height": 0.13
+			},
+			"rotations": {
+				"x": 0,
+				"y": 212.5,
+				"z": 0
+			}
+		},
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": 1.33445539,
+				"y": -0.45183909,
+				"z": 2.3014134
+			},
+			"dimensions": {
+				"length": 0.81,
+				"width": 0.3,
+				"height": 0.13
+			},
+			"rotations": {
+				"x": 0,
+				"y": 216.5,
+				"z": 0
+			}
+		},
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": 1.37767496,
+				"y": -0.25507064,
+				"z": 2.34006046
+			},
+			"dimensions": {
+				"length": 0.81,
+				"width": 0.21,
+				"height": 0.1
+			},
+			"rotations": {
+				"x": 0,
+				"y": 218.0,
+				"z": 0
+			}
+		},
+		{
+			"name": "pallet truck",
+			"centroid": {
+				"x": 0.74474629,
+				"y": 0.6565456,
+				"z": 2.69824753
+			},
+			"dimensions": {
+				"length": 0.66,
+				"width": 0.48,
+				"height": 0.37
+			},
+			"rotations": {
+				"x": 0,
+				"y": 223.0,
+				"z": 0
+			}
+		},
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": 1.32135226,
+				"y": 0.766708,
+				"z": 2.2354802
+			},
+			"dimensions": {
+				"length": 0.81,
+				"width": 0.3,
+				"height": 0.19
+			},
+			"rotations": {
+				"x": 0,
+				"y": 220.0,
+				"z": 0
+			}
+		}
+	]
 }

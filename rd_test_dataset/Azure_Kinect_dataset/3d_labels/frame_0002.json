@@ -1,43 +1,43 @@
 {
-    "folder": "ply_output",
-    "filename": "frame_0002.ply",
-    "path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0002.ply",
-    "objects": [
-        {
-            "name": "forklift",
-            "centroid": {
-                "x": -0.8060985,
-                "y": -0.20619139,
-                "z": 2.67326316
-            },
-            "dimensions": {
-                "length": 2.4,
-                "width": 2.26,
-                "height": 1.17
-            },
-            "rotations": {
-                "x": 358.0,
-                "y": 167.0,
-                "z": 0.0
-            }
-        },
-        {
-            "name": "forklift",
-            "centroid": {
-                "x": 0.97779453,
-                "y": -0.19133395,
-                "z": 2.57158594
-            },
-            "dimensions": {
-                "length": 2.31,
-                "width": 2.17,
-                "height": 1.29
-            },
-            "rotations": {
-                "x": 359.0,
-                "y": 170.5,
-                "z": 359.5
-            }
-        }
-    ]
+	"folder": "ply_output",
+	"filename": "frame_0002.ply",
+	"path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0002.ply",
+	"objects": [
+		{
+			"name": "forklift",
+			"centroid": {
+				"x": -0.8060985,
+				"y": -0.20619139,
+				"z": 2.67326316
+			},
+			"dimensions": {
+				"length": 1.17,
+				"width": 2.26,
+				"height": 2.4
+			},
+			"rotations": {
+				"x": 0,
+				"y": 167.0,
+				"z": 0
+			}
+		},
+		{
+			"name": "forklift",
+			"centroid": {
+				"x": 0.97779453,
+				"y": -0.19133395,
+				"z": 2.57158594
+			},
+			"dimensions": {
+				"length": 1.29,
+				"width": 2.17,
+				"height": 2.31
+			},
+			"rotations": {
+				"x": 0,
+				"y": 170.5,
+				"z": 0
+			}
+		}
+	]
 }

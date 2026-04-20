@@ -1,25 +1,25 @@
 {
-    "folder": "ply_output",
-    "filename": "frame_0054.ply",
-    "path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0054.ply",
-    "objects": [
-        {
-            "name": "pallet",
-            "centroid": {
-                "x": 0.46127186,
-                "y": 0.16125326,
-                "z": 1.77420246
-            },
-            "dimensions": {
-                "length": 1.26233064,
-                "width": 0.1979476,
-                "height": 0.76727216
-            },
-            "rotations": {
-                "x": 0.5,
-                "y": 76.42836643999999,
-                "z": 0.14917172
-            }
-        }
-    ]
+	"folder": "ply_output",
+	"filename": "frame_0054.ply",
+	"path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0054.ply",
+	"objects": [
+		{
+			"name": "pallet",
+			"centroid": {
+				"x": 0.46127186,
+				"y": 0.16125326,
+				"z": 1.77420246
+			},
+			"dimensions": {
+				"length": 0.76727216,
+				"width": 1.26233064,
+				"height": 0.1979476
+			},
+			"rotations": {
+				"x": 0,
+				"y": 76.42836643999999,
+				"z": 0
+			}
+		}
+	]
 }

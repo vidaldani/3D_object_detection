@@ -1,25 +1,25 @@
 {
-    "folder": "ply_output",
-    "filename": "exemplary.ply",
-    "path": "D:\\GitHub_repository\\Dataset\\ply_output\\exemplary.ply",
-    "objects": [
-        {
-            "name": "cart",
-            "centroid": {
-                "x": -0.1908196,
-                "y": 0.23602801,
-                "z": 0.08046184
-            },
-            "dimensions": {
-                "length": 0.75,
-                "width": 0.55,
-                "height": 0.15
-            },
-            "rotations": {
-                "x": 0,
-                "y": 90.0,
-                "z": 235
-            }
-        }
-    ]
+	"folder": "ply_output",
+	"filename": "exemplary.ply",
+	"path": "D:\\GitHub_repository\\Dataset\\ply_output\\exemplary.ply",
+	"objects": [
+		{
+			"name": "cart",
+			"centroid": {
+				"x": -0.1908196,
+				"y": 0.23602801,
+				"z": 0.08046184
+			},
+			"dimensions": {
+				"length": 0.15,
+				"width": 0.55,
+				"height": 0.75
+			},
+			"rotations": {
+				"x": 0,
+				"y": 90.0,
+				"z": 235
+			}
+		}
+	]
 }

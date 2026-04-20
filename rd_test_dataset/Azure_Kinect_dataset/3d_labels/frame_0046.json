@@ -1,61 +1,61 @@
 {
-    "folder": "ply_output",
-    "filename": "frame_0046.ply",
-    "path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0046.ply",
-    "objects": [
-        {
-            "name": "stillage",
-            "centroid": {
-                "x": -0.16431404,
-                "y": 0.37701758,
-                "z": 1.81659291
-            },
-            "dimensions": {
-                "length": 0.86799241,
-                "width": 0.97313718,
-                "height": 0.11755102
-            },
-            "rotations": {
-                "x": 0,
-                "y": 90.66921610999998,
-                "z": 0.10948527
-            }
-        },
-        {
-            "name": "stillage",
-            "centroid": {
-                "x": 0.77279899,
-                "y": 0.39543185,
-                "z": 1.7982012
-            },
-            "dimensions": {
-                "length": 0.8551948,
-                "width": 0.96747642,
-                "height": 0.10807507
-            },
-            "rotations": {
-                "x": 0,
-                "y": 92.00322372,
-                "z": 0.1871885
-            }
-        },
-        {
-            "name": "stillage",
-            "centroid": {
-                "x": 0.68007211,
-                "y": -0.94956848,
-                "z": 1.81959083
-            },
-            "dimensions": {
-                "length": 0.84159589,
-                "width": 0.38441159,
-                "height": 0.18319963
-            },
-            "rotations": {
-                "x": 0,
-                "y": 92.43794743000001,
-                "z": 359.82102449
-            }
-        }
-    ]
+	"folder": "ply_output",
+	"filename": "frame_0046.ply",
+	"path": "D:\\GitHub_repository\\Dataset\\ply_output\\frame_0046.ply",
+	"objects": [
+		{
+			"name": "stillage",
+			"centroid": {
+				"x": -0.164,
+				"y": 0.377,
+				"z": 1.817
+			},
+			"dimensions": {
+				"length": 0.118,
+				"width": 0.868,
+				"height": 0.973
+			},
+			"rotations": {
+				"x": 0,
+				"y": 90.669,
+				"z": 0
+			}
+		},
+		{
+			"name": "stillage",
+			"centroid": {
+				"x": 0.773,
+				"y": 0.395,
+				"z": 1.798
+			},
+			"dimensions": {
+				"length": 0.108,
+				"width": 0.855,
+				"height": 0.967
+			},
+			"rotations": {
+				"x": 0,
+				"y": 92.003,
+				"z": 0
+			}
+		},
+		{
+			"name": "stillage",
+			"centroid": {
+				"x": 0.68,
+				"y": -0.95,
+				"z": 1.82
+			},
+			"dimensions": {
+				"length": 0.183,
+				"width": 0.842,
+				"height": 0.384
+			},
+			"rotations": {
+				"x": 0,
+				"y": 92.438,
+				"z": 0
+			}
+		}
+	]
 }
