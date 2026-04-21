@@ -13,6 +13,7 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
     QPushButton, QListWidget, QListWidgetItem, QLineEdit, QLabel,
     QFileDialog, QMessageBox, QSplitter, QGroupBox, QGridLayout,
+    QDialog, QComboBox, QDialogButtonBox, QFormLayout, QDoubleSpinBox,
 )
 from PyQt5.QtCore import Qt
 
@@ -49,6 +50,27 @@ FIELD_LABELS = [
     "dim length",  "dim width",  "dim height",
     "rot x",       "rot y",      "rot z",
 ]
+
+DROPDOWN_OPTIONS = ["pallet", "KLT small", "KLT large", "stillage", "forklift", "pallet truck", "Custom..."]
+
+# Maps dropdown label → JSON name (KLT small/large both become "klt")
+DROPDOWN_NAME_MAP = {
+    "pallet":       "pallet",
+    "KLT small":    "klt",
+    "KLT large":    "klt",
+    "stillage":     "stillage",
+    "forklift":     "forklift",
+    "pallet truck": "pallet truck",
+}
+
+DEFAULT_DIMENSIONS = {
+    "pallet":       {"length": 1.200, "width": 0.800, "height": 0.144},
+    "KLT small":    {"length": 0.400, "width": 0.300, "height": 0.147},
+    "KLT large":    {"length": 0.600, "width": 0.400, "height": 0.147},
+    "stillage":     {"length": 1.200, "width": 0.800, "height": 0.970},
+    "forklift":     {"length": 2.800, "width": 1.300, "height": 2.150},
+    "pallet truck": {"length": 1.800, "width": 0.550, "height": 1.200},
+}
 
 DARK_STYLESHEET = """
 QMainWindow, QWidget {
@@ -145,6 +167,13 @@ def build_pv_bbox(obj) -> tuple[pv.PolyData, tuple]:
     return mesh, color
 
 
+# Spinbox config: (min, max, step, decimals) per field section
+_SPIN_CFG = {
+    "centroid":   (-50.0, 50.0,  0.01, 3),
+    "dimensions": ( 0.001, 10.0, 0.01, 3),
+    "rotations":  (-360.0, 360.0, 1.0, 1),
+}
+
 # ---------------------------------------------------------------------------
 # Per-object editor widget
 # ---------------------------------------------------------------------------
@@ -153,23 +182,35 @@ class ObjectFieldWidget(QGroupBox):
     def __init__(self, index: int, obj: dict, on_change=None, parent=None):
         super().__init__(f"[{index}]  {obj['name']}", parent)
         self._obj = obj
-        self._on_change = on_change
-        self.fields: dict[tuple, QLineEdit] = {}
+        self.fields: dict[tuple, QDoubleSpinBox] = {}
 
-        CELL_W = 100  # uniform width for edits and buttons
-        CELL_H = 24   # uniform height for edits and buttons
+        SPIN_W = 115
+        CELL_H = 24
+        BTN_W  = 90
 
         grid = QGridLayout()
         grid.setContentsMargins(6, 6, 6, 6)
         grid.setSpacing(3)
         grid.setColumnMinimumWidth(0, 72)
-        grid.setColumnMinimumWidth(1, CELL_W)
-        grid.setColumnMinimumWidth(2, CELL_W)
-        grid.setColumnMinimumWidth(3, CELL_W)
+        grid.setColumnMinimumWidth(1, SPIN_W)
+        grid.setColumnMinimumWidth(2, BTN_W)
+        grid.setColumnMinimumWidth(3, BTN_W)
+
+        def _spin(section, key):
+            lo, hi, step, dec = _SPIN_CFG[section]
+            s = QDoubleSpinBox()
+            s.setRange(lo, hi)
+            s.setSingleStep(step)
+            s.setDecimals(dec)
+            s.setFixedSize(SPIN_W, CELL_H)
+            s.setValue(float(obj[section][key]))
+            if on_change:
+                s.valueChanged.connect(lambda _: on_change())
+            return s
 
         def _btn(text, slot):
             b = QPushButton(text)
-            b.setFixedSize(CELL_W, CELL_H)
+            b.setFixedSize(BTN_W, CELL_H)
             b.setStyleSheet("min-height: 0; padding: 0;")
             b.clicked.connect(slot)
             if on_change:
@@ -177,16 +218,11 @@ class ObjectFieldWidget(QGroupBox):
             return b
 
         for row_idx, ((section, key), label_text) in enumerate(zip(FIELD_KEYS, FIELD_LABELS)):
-            lbl = QLabel(label_text)
-            val = obj[section][key]
-            edit = QLineEdit(f"{val:.3f}" if isinstance(val, float) else str(val))
-            edit.setFixedSize(CELL_W, CELL_H)
-            if on_change:
-                edit.editingFinished.connect(on_change)
-            self.fields[(section, key)] = edit
+            spin = _spin(section, key)
+            self.fields[(section, key)] = spin
 
-            grid.addWidget(lbl,  row_idx, 0)
-            grid.addWidget(edit, row_idx, 1)
+            grid.addWidget(QLabel(label_text), row_idx, 0)
+            grid.addWidget(spin,               row_idx, 1)
 
             if (section, key) == ("dimensions", "length"):
                 grid.addWidget(_btn("L↔W", self.swap_lw), row_idx, 2)
@@ -198,40 +234,156 @@ class ObjectFieldWidget(QGroupBox):
 
     def get_values(self) -> dict | None:
         result = copy.deepcopy(self._obj)
+        for (section, key), spin in self.fields.items():
+            result[section][key] = spin.value()
+        return result
+
+    def clear_highlights(self):
+        pass  # QDoubleSpinBox self-validates; nothing to clear
+
+    def swap_wh(self):
+        tmp = self.fields[("dimensions", "width")].value()
+        self.fields[("dimensions", "width")].setValue(self.fields[("dimensions", "height")].value())
+        self.fields[("dimensions", "height")].setValue(tmp)
+
+    def swap_lw(self):
+        tmp = self.fields[("dimensions", "length")].value()
+        self.fields[("dimensions", "length")].setValue(self.fields[("dimensions", "width")].value())
+        self.fields[("dimensions", "width")].setValue(tmp)
+
+    def swap_lh(self):
+        tmp = self.fields[("dimensions", "length")].value()
+        self.fields[("dimensions", "length")].setValue(self.fields[("dimensions", "height")].value())
+        self.fields[("dimensions", "height")].setValue(tmp)
+
+
+# ---------------------------------------------------------------------------
+# Add-object dialog
+# ---------------------------------------------------------------------------
+class AddObjectDialog(QDialog):
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Add Object")
+        self.setModal(True)
+        self.setMinimumWidth(320)
+        self._build_ui()
+
+    def _build_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setSpacing(8)
+        form = QFormLayout()
+        form.setSpacing(6)
+
+        # Object type selector
+        self._combo = QComboBox()
+        self._combo.addItems(DROPDOWN_OPTIONS)
+        self._combo.currentTextChanged.connect(self._on_type_changed)
+        form.addRow("Object type:", self._combo)
+
+        # Custom name field (hidden by default)
+        self._custom_name = QLineEdit()
+        self._custom_name.setPlaceholderText("Enter custom name…")
+        self._custom_name.hide()
+        form.addRow("Custom name:", self._custom_name)
+
+        # Dimension fields
+        self._f_length = QLineEdit("0.000")
+        self._f_width  = QLineEdit("0.000")
+        self._f_height = QLineEdit("0.000")
+        form.addRow("Length (m):", self._f_length)
+        form.addRow("Width  (m):", self._f_width)
+        form.addRow("Height (m):", self._f_height)
+
+        # Centroid fields
+        self._f_cx = QLineEdit("0.000")
+        self._f_cy = QLineEdit("0.000")
+        self._f_cz = QLineEdit("0.000")
+        form.addRow("Centroid X:", self._f_cx)
+        form.addRow("Centroid Y:", self._f_cy)
+        form.addRow("Centroid Z:", self._f_cz)
+
+        # Rotation fields
+        self._f_rx = QLineEdit("0.000")
+        self._f_ry = QLineEdit("0.000")
+        self._f_rz = QLineEdit("0.000")
+        form.addRow("Rotation X:", self._f_rx)
+        form.addRow("Rotation Y:", self._f_ry)
+        form.addRow("Rotation Z:", self._f_rz)
+
+        layout.addLayout(form)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.button(QDialogButtonBox.Ok).setText("Add")
+        buttons.accepted.connect(self._on_add)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+        # Pre-fill first option
+        self._on_type_changed(DROPDOWN_OPTIONS[0])
+
+    def _on_type_changed(self, text: str):
+        is_custom = (text == "Custom...")
+        self._custom_name.setVisible(is_custom)
+        if is_custom:
+            self._f_length.clear()
+            self._f_width.clear()
+            self._f_height.clear()
+        else:
+            dims = DEFAULT_DIMENSIONS.get(text, {})
+            self._f_length.setText(f"{dims.get('length', 0.0):.3f}")
+            self._f_width.setText(f"{dims.get('width',  0.0):.3f}")
+            self._f_height.setText(f"{dims.get('height', 0.0):.3f}")
+
+    def _on_add(self):
+        fields = [
+            self._f_length, self._f_width, self._f_height,
+            self._f_cx, self._f_cy, self._f_cz,
+            self._f_rx, self._f_ry, self._f_rz,
+        ]
         invalid = False
-        for (section, key), edit in self.fields.items():
+        for edit in fields:
             try:
-                result[section][key] = float(edit.text().strip())
+                float(edit.text().strip())
                 edit.setStyleSheet("")
             except ValueError:
                 edit.setStyleSheet("background-color: #7a2020; color: #ffcccc;")
                 invalid = True
-        return None if invalid else result
 
-    def clear_highlights(self):
-        for edit in self.fields.values():
-            edit.setStyleSheet("")
+        if self._combo.currentText() == "Custom..." and not self._custom_name.text().strip():
+            self._custom_name.setStyleSheet("background-color: #7a2020; color: #ffcccc;")
+            invalid = True
 
-    def swap_wh(self):
-        w_edit = self.fields[("dimensions", "width")]
-        h_edit = self.fields[("dimensions", "height")]
-        tmp = w_edit.text()
-        w_edit.setText(h_edit.text())
-        h_edit.setText(tmp)
+        if invalid:
+            QMessageBox.warning(self, "Invalid values", "Please fix the highlighted fields.")
+            return
+        self.accept()
 
-    def swap_lw(self):
-        l_edit = self.fields[("dimensions", "length")]
-        w_edit = self.fields[("dimensions", "width")]
-        tmp = l_edit.text()
-        l_edit.setText(w_edit.text())
-        w_edit.setText(tmp)
+    def get_object(self) -> dict:
+        label = self._combo.currentText()
+        if label == "Custom...":
+            name = self._custom_name.text().strip()
+        else:
+            name = DROPDOWN_NAME_MAP.get(label, label)
 
-    def swap_lh(self):
-        l_edit = self.fields[("dimensions", "length")]
-        h_edit = self.fields[("dimensions", "height")]
-        tmp = l_edit.text()
-        l_edit.setText(h_edit.text())
-        h_edit.setText(tmp)
+        return {
+            "name": name,
+            "centroid": {
+                "x": float(self._f_cx.text()),
+                "y": float(self._f_cy.text()),
+                "z": float(self._f_cz.text()),
+            },
+            "dimensions": {
+                "length": float(self._f_length.text()),
+                "width":  float(self._f_width.text()),
+                "height": float(self._f_height.text()),
+            },
+            "rotations": {
+                "x": float(self._f_rx.text()),
+                "y": float(self._f_ry.text()),
+                "z": float(self._f_rz.text()),
+            },
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -349,6 +501,10 @@ class LabelEditorWindow(QMainWindow):
         self.object_list.setFixedHeight(110)
         self.object_list.currentRowChanged.connect(self._on_object_selected)
         layout.addWidget(self.object_list)
+
+        add_btn = QPushButton("+ Add Object")
+        add_btn.clicked.connect(self._on_add_object)
+        layout.addWidget(add_btn)
 
         self._fields_container = QWidget()
         self._fields_layout = QVBoxLayout(self._fields_container)
@@ -534,6 +690,34 @@ class LabelEditorWindow(QMainWindow):
         else:
             self.plotter.camera_position = cam_pos
 
+    def _on_add_object(self):
+        if not self.current_frame_id:
+            QMessageBox.warning(self, "No frame loaded",
+                                "Please load a point cloud before adding objects.")
+            return
+        if not self.labels_dir:
+            QMessageBox.warning(self, "No labels folder",
+                                "Please select a labels folder first.")
+            return
+
+        dlg = AddObjectDialog(parent=self)
+        dlg.setStyleSheet(self.styleSheet())
+        if dlg.exec_() != QDialog.Accepted:
+            return
+
+        new_obj = dlg.get_object()
+        self._sync_active()
+        self.current_objects.append(new_obj)
+
+        new_idx = len(self.current_objects) - 1
+        self.object_list.blockSignals(True)
+        self.object_list.addItem(f"[{new_idx}]  {new_obj['name']}")
+        self.object_list.blockSignals(False)
+
+        self._dirty = True
+        self.object_list.setCurrentRow(new_idx)   # triggers _on_object_selected
+        self._update_status(f"Added '{new_obj['name']}' — {len(self.current_objects)} object(s)")
+
     def _on_save(self):
         if self.current_frame_id is None or not self.labels_dir:
             self._update_status("No frame loaded or labels folder not set")
@@ -543,8 +727,19 @@ class LabelEditorWindow(QMainWindow):
             QMessageBox.warning(self, "Invalid field values", err)
             return
 
-        save_data = copy.deepcopy(self.current_label_data) if self.current_label_data else {}
-        save_data["objects"] = self.current_objects
+        is_new = self.current_label_data is None
+        if is_new:
+            pcd_filename = f"{self.current_frame_id}.pcd"
+            pcd_path = os.path.join(self.pcd_dir, pcd_filename) if self.pcd_dir else ""
+            save_data = {
+                "folder":   os.path.basename(self.labels_dir),
+                "filename": f"{self.current_frame_id}.ply",
+                "path":     pcd_path,
+                "objects":  self.current_objects,
+            }
+        else:
+            save_data = copy.deepcopy(self.current_label_data)
+            save_data["objects"] = self.current_objects
 
         out_path = os.path.join(self.labels_dir, f"{self.current_frame_id}.json")
         with open(out_path, "w") as f:
@@ -552,7 +747,10 @@ class LabelEditorWindow(QMainWindow):
 
         self.current_label_data = save_data
         self._dirty = False
-        self._update_status(f"Saved {self.current_frame_id}.json successfully")
+        if is_new:
+            self._update_status(f"New label file created: {self.current_frame_id}.json")
+        else:
+            self._update_status(f"Saved {self.current_frame_id}.json successfully")
 
     def _on_swap_all_pallets(self):
         self._sync_active()
