@@ -2,6 +2,8 @@
 
 A PyQt5 desktop GUI for browsing, visualizing, and correcting 3D bounding box labels on Azure Kinect point cloud data.
 
+![GUI Screenshot](images/gui.png)
+
 ## Features
 
 - Embedded 3D viewer (PyVista) — no separate window needed
@@ -57,6 +59,7 @@ Labels are JSON files with one file per point cloud frame, named `frame_XXXX.jso
 ```
 
 Supported class names: `forklift`, `pallet truck`, `pallet`, `klt`, `stillage`, `small_load_carrier`
+
 Custom object classes can also be added.
 
 ## Controls
