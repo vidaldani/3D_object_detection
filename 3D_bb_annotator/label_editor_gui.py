@@ -1,27 +1,38 @@
 import sys
 import os
+import re
 import json
 import copy
 import random
+
+# Allow sibling-module imports (pose_estimation_pipeline, auto_bbox_dialog)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import numpy as np
 import open3d as o3d
 import pyvista as pv
 from pyvistaqt import QtInteractor
+from PIL import Image as _PIL_Image
 
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
     QPushButton, QListWidget, QListWidgetItem, QLineEdit, QLabel,
     QFileDialog, QMessageBox, QSplitter, QGroupBox, QGridLayout,
     QDialog, QComboBox, QDialogButtonBox, QFormLayout, QDoubleSpinBox,
+    QStyle, QCheckBox, QSizePolicy, QScrollArea, QFrame, QProgressBar,
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5.QtGui import QPixmap
 
 pv.set_plot_theme("dark")
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
+CONFIG_PATH     = os.path.expanduser("~/.3d_label_editor.json")
+MAX_RECENT      = 5
+YOLO_MODEL_PATH = "/home/tumwfml-ubunt6/3D_object_detection/instance_segmentation/YOLOv11-Seg/train/weights/best.pt"
+
 PALLET_CLASSES = {"pallet", "pallet truck", "pallet_truck"}
 
 BBOX_LINES = [
@@ -53,7 +64,6 @@ FIELD_LABELS = [
 
 DROPDOWN_OPTIONS = ["pallet", "KLT small", "KLT large", "stillage", "forklift", "pallet truck", "Custom..."]
 
-# Maps dropdown label → JSON name (KLT small/large both become "klt")
 DROPDOWN_NAME_MAP = {
     "pallet":       "pallet",
     "KLT small":    "klt",
@@ -131,7 +141,42 @@ QSplitter::handle { background-color: #3c3c3c; width: 2px; }
 """
 
 # ---------------------------------------------------------------------------
-# Geometry helpers (pure numpy — no Open3D dependency in math)
+# Config persistence
+# ---------------------------------------------------------------------------
+def load_config() -> dict:
+    try:
+        with open(CONFIG_PATH, "r") as f:
+            return json.load(f)
+    except Exception:
+        return {"recent_projects": []}
+
+
+def save_config(cfg: dict):
+    try:
+        with open(CONFIG_PATH, "w") as f:
+            json.dump(cfg, f, indent=2)
+    except Exception:
+        pass
+
+
+def push_recent_project(cfg: dict, name: str, pcd_dir: str, labels_dir: str,
+                        rgb_dir: str = "", depth_dir: str = "", camera_params_dir: str = ""):
+    # Remove any existing entry with the same folders (regardless of name)
+    recent = [p for p in cfg.get("recent_projects", [])
+              if not (p.get("pcd_dir") == pcd_dir and p.get("labels_dir") == labels_dir)]
+    recent.insert(0, {
+        "name":              name,
+        "pcd_dir":           pcd_dir,
+        "labels_dir":        labels_dir,
+        "rgb_dir":           rgb_dir,
+        "depth_dir":         depth_dir,
+        "camera_params_dir": camera_params_dir,
+    })
+    cfg["recent_projects"] = recent[:MAX_RECENT]
+
+
+# ---------------------------------------------------------------------------
+# Geometry helpers
 # ---------------------------------------------------------------------------
 def _rotation_y(yaw_rad: float) -> np.ndarray:
     c, s = np.cos(yaw_rad), np.sin(yaw_rad)
@@ -167,12 +212,321 @@ def build_pv_bbox(obj) -> tuple[pv.PolyData, tuple]:
     return mesh, color
 
 
+
+_IMAGE_EXTS = {".jpg", ".jpeg", ".png"}
+
+def _find_rgb_image(rgb_dir: str, frame_id: str) -> str | None:
+    # Fast path: exact name match with common suffixes
+    for suffix in ("", "_color"):
+        for ext in _IMAGE_EXTS:
+            path = os.path.join(rgb_dir, f"{frame_id}{suffix}{ext}")
+            if os.path.exists(path):
+                return path
+
+    # Fallback: match by numeric ID only (handles different naming conventions,
+    # e.g. pointcloud_000 <-> rgb_000, frame_0019 <-> image_19)
+    numbers = re.findall(r"\d+", frame_id)
+    if not numbers:
+        return None
+    target = int(numbers[-1])  # use last number, compare as int (ignores zero-padding)
+
+    for fname in sorted(os.listdir(rgb_dir)):
+        if os.path.splitext(fname)[1].lower() not in _IMAGE_EXTS:
+            continue
+        file_nums = re.findall(r"\d+", fname)
+        if file_nums and int(file_nums[-1]) == target:
+            return os.path.join(rgb_dir, fname)
+
+    return None
+
+
 # Spinbox config: (min, max, step, decimals) per field section
 _SPIN_CFG = {
     "centroid":   (-50.0, 50.0,  0.01, 3),
     "dimensions": ( 0.001, 10.0, 0.01, 3),
     "rotations":  (-360.0, 360.0, 1.0, 1),
 }
+
+# ---------------------------------------------------------------------------
+# Project editor dialog (used for both New and Edit)
+# ---------------------------------------------------------------------------
+class ProjectEditorDialog(QDialog):
+
+    def __init__(self, name: str = "", pcd_dir: str = "", labels_dir: str = "",
+                 rgb_dir: str = "", depth_dir: str = "", camera_params_dir: str = "",
+                 parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Project Folders")
+        self.setModal(True)
+        self.setMinimumWidth(540)
+        self._name              = name
+        self._pcd_dir           = pcd_dir
+        self._labels_dir        = labels_dir
+        self._rgb_dir           = rgb_dir
+        self._depth_dir         = depth_dir
+        self._camera_params_dir = camera_params_dir
+        self._build_ui()
+
+    def _build_ui(self):
+        ROW_H = 30
+
+        layout = QVBoxLayout(self)
+        layout.setSpacing(10)
+
+        # Name field — full width
+        name_form = QFormLayout()
+        name_form.setSpacing(6)
+        self._name_edit = QLineEdit(self._name)
+        self._name_edit.setPlaceholderText("e.g. Azure Kinect — warehouse run 1")
+        self._name_edit.setFixedHeight(ROW_H)
+        name_form.addRow("Project name:", self._name_edit)
+        layout.addLayout(name_form)
+
+        # Grid: col 0 = path display (stretches), col 1 = buttons (fixed, aligned)
+        grid = QGridLayout()
+        grid.setSpacing(6)
+        grid.setColumnStretch(0, 1)
+
+        def _path_edit(placeholder, text):
+            e = QLineEdit(text)
+            e.setPlaceholderText(placeholder)
+            e.setReadOnly(True)
+            e.setFixedHeight(ROW_H)
+            return e
+
+        def _browse_btn(text, slot):
+            b = QPushButton(text)
+            b.setFixedHeight(ROW_H)
+            b.clicked.connect(slot)
+            return b
+
+        self._pcd_edit = _path_edit("Point cloud folder (.pcd / .ply)…", self._pcd_dir)
+        pcd_btn = _browse_btn("Browse PCD folder…", self._browse_pcd)
+        grid.addWidget(self._pcd_edit, 0, 0)
+        grid.addWidget(pcd_btn,        0, 1)
+
+        self._lbl_edit = _path_edit("3D labels folder (.json)…", self._labels_dir)
+        lbl_btn = _browse_btn("Browse Labels folder…", self._browse_labels)
+        grid.addWidget(self._lbl_edit, 1, 0)
+        grid.addWidget(lbl_btn,        1, 1)
+
+        self._rgb_edit = _path_edit("RGB images folder (.jpg / .png)…", self._rgb_dir)
+        rgb_btn = _browse_btn("Browse RGB folder…", self._browse_rgb)
+        grid.addWidget(self._rgb_edit, 2, 0)
+        grid.addWidget(rgb_btn,        2, 1)
+
+        self._depth_edit = _path_edit("Depth maps folder (.npy)…", self._depth_dir)
+        depth_btn = _browse_btn("Browse Depth folder…", self._browse_depth)
+        grid.addWidget(self._depth_edit, 3, 0)
+        grid.addWidget(depth_btn,        3, 1)
+
+        self._params_edit = _path_edit("Camera params folder (.npz / .json)…", self._camera_params_dir)
+        params_btn = _browse_btn("Browse Params folder…", self._browse_params)
+        grid.addWidget(self._params_edit, 4, 0)
+        grid.addWidget(params_btn,        4, 1)
+
+        # Cancel + Confirm in col 1 — same column as Browse buttons → same width
+        btn_row = QHBoxLayout()
+        btn_row.setSpacing(6)
+        cancel_btn  = QPushButton("Cancel")
+        confirm_btn = QPushButton("Confirm")
+        cancel_btn.setFixedHeight(ROW_H)
+        confirm_btn.setFixedHeight(ROW_H)
+        cancel_btn.setIcon(self.style().standardIcon(QStyle.SP_DialogCancelButton))
+        confirm_btn.setIcon(self.style().standardIcon(QStyle.SP_DialogOkButton))
+        cancel_btn.clicked.connect(self.reject)
+        confirm_btn.clicked.connect(self._on_confirm)
+        btn_row.addWidget(cancel_btn)
+        btn_row.addWidget(confirm_btn)
+        grid.addLayout(btn_row, 5, 1)
+
+        layout.addLayout(grid)
+
+    def _browse_pcd(self):
+        path = QFileDialog.getExistingDirectory(self, "Select PCD / PLY folder",
+                                                self._pcd_edit.text() or os.path.expanduser("~"))
+        if path:
+            self._pcd_edit.setText(path)
+
+    def _browse_labels(self):
+        path = QFileDialog.getExistingDirectory(self, "Select 3D Labels folder",
+                                                self._lbl_edit.text() or os.path.expanduser("~"))
+        if path:
+            self._lbl_edit.setText(path)
+
+    def _browse_rgb(self):
+        path = QFileDialog.getExistingDirectory(self, "Select RGB Images folder",
+                                                self._rgb_edit.text() or os.path.expanduser("~"))
+        if path:
+            self._rgb_edit.setText(path)
+
+    def _browse_depth(self):
+        path = QFileDialog.getExistingDirectory(self, "Select Depth Maps folder",
+                                                self._depth_edit.text() or os.path.expanduser("~"))
+        if path:
+            self._depth_edit.setText(path)
+
+    def _browse_params(self):
+        path = QFileDialog.getExistingDirectory(self, "Select Camera Parameters folder",
+                                                self._params_edit.text() or os.path.expanduser("~"))
+        if path:
+            self._params_edit.setText(path)
+
+    def _on_confirm(self):
+        if not self._pcd_edit.text().strip():
+            QMessageBox.warning(self, "Missing folder", "Please select a PCD / PLY folder.")
+            return
+        self.accept()
+
+    def get_project(self) -> dict:
+        return {
+            "name":              self._name_edit.text().strip(),
+            "pcd_dir":           self._pcd_edit.text().strip(),
+            "labels_dir":        self._lbl_edit.text().strip(),
+            "rgb_dir":           self._rgb_edit.text().strip(),
+            "depth_dir":         self._depth_edit.text().strip(),
+            "camera_params_dir": self._params_edit.text().strip(),
+        }
+
+
+# ---------------------------------------------------------------------------
+# Load Project dialog
+# ---------------------------------------------------------------------------
+class LoadProjectDialog(QDialog):
+
+    def __init__(self, recent_projects: list, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Load Project")
+        self.setModal(True)
+        self.setMinimumWidth(540)
+        self._recent = list(recent_projects)
+        self._selected: dict | None = None
+        self._build_ui()
+
+    def _build_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setSpacing(8)
+
+        layout.addWidget(QLabel("Recent projects:"))
+        self._list = QListWidget()
+        self._list.setMinimumHeight(150)
+        self._list.currentRowChanged.connect(self._on_row_changed)
+        self._list.itemDoubleClicked.connect(lambda _: self._on_accept())
+        layout.addWidget(self._list)
+
+        # Action buttons row — equal fixed width so they all match
+        action_row = QHBoxLayout()
+        new_btn = QPushButton("+ New")
+        new_btn.clicked.connect(self._on_new)
+        self._edit_btn   = QPushButton("Edit")
+        self._edit_btn.clicked.connect(self._on_edit)
+        self._delete_btn = QPushButton("Delete")
+        self._delete_btn.clicked.connect(self._on_delete)
+        for b in (new_btn, self._edit_btn, self._delete_btn):
+            b.setFixedWidth(80)
+            action_row.addWidget(b)
+        action_row.addStretch()
+        layout.addLayout(action_row)
+
+        self._detail = QLabel("")
+        self._detail.setWordWrap(True)
+        self._detail.setStyleSheet("color: #888; font-size: 11px;")
+        layout.addWidget(self._detail)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.button(QDialogButtonBox.Ok).setText("Load")
+        buttons.accepted.connect(self._on_accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+        # Populate list only after _detail exists
+        self._refresh_list()
+        self._update_button_state()
+
+    def _refresh_list(self, keep_row: int = 0):
+        self._list.blockSignals(True)
+        self._list.clear()
+        for p in self._recent:
+            name = p.get("name", "").strip()
+            label = name if name else os.path.basename(p["pcd_dir"])
+            self._list.addItem(f"  {label}")
+        if not self._recent:
+            self._list.addItem("No recent projects — click '+ New' to add one")
+        self._list.blockSignals(False)
+        row = min(keep_row, max(0, len(self._recent) - 1))
+        self._list.setCurrentRow(row)
+        self._on_row_changed(row)
+        self._update_button_state()
+
+    def _update_button_state(self):
+        has_selection = 0 <= self._list.currentRow() < len(self._recent)
+        self._edit_btn.setEnabled(has_selection)
+        self._delete_btn.setEnabled(has_selection)
+
+    def _on_row_changed(self, row: int):
+        if 0 <= row < len(self._recent):
+            p = self._recent[row]
+            lbl = p.get("labels_dir") or "—"
+            self._detail.setText(f"PCD:    {p['pcd_dir']}\nLabels: {lbl}")
+        else:
+            self._detail.setText("")
+        self._update_button_state()
+
+    def _on_new(self):
+        dlg = ProjectEditorDialog(parent=self)
+        dlg.setStyleSheet(self.styleSheet())
+        if dlg.exec_() != QDialog.Accepted:
+            return
+        entry = dlg.get_project()
+        self._recent = [p for p in self._recent if p != entry]
+        self._recent.insert(0, entry)
+        self._recent = self._recent[:MAX_RECENT]
+        self._refresh_list(keep_row=0)
+
+    def _on_edit(self):
+        row = self._list.currentRow()
+        if row < 0 or row >= len(self._recent):
+            return
+        p = self._recent[row]
+        dlg = ProjectEditorDialog(name=p.get("name", ""),
+                                  pcd_dir=p.get("pcd_dir", ""),
+                                  labels_dir=p.get("labels_dir", ""),
+                                  rgb_dir=p.get("rgb_dir", ""),
+                                  depth_dir=p.get("depth_dir", ""),
+                                  camera_params_dir=p.get("camera_params_dir", ""),
+                                  parent=self)
+        dlg.setStyleSheet(self.styleSheet())
+        if dlg.exec_() != QDialog.Accepted:
+            return
+        self._recent[row] = dlg.get_project()
+        self._refresh_list(keep_row=row)
+
+    def _on_delete(self):
+        row = self._list.currentRow()
+        if row < 0 or row >= len(self._recent):
+            return
+        name = os.path.basename(self._recent[row]["pcd_dir"])
+        reply = QMessageBox.question(self, "Delete project",
+                                     f"Remove '{name}' from recent projects?",
+                                     QMessageBox.Yes | QMessageBox.No)
+        if reply != QMessageBox.Yes:
+            return
+        self._recent.pop(row)
+        self._refresh_list(keep_row=max(0, row - 1))
+
+    def _on_accept(self):
+        row = self._list.currentRow()
+        if row < 0 or row >= len(self._recent):
+            return
+        self._selected = self._recent[row]
+        self.accept()
+
+    def get_project(self) -> dict | None:
+        return self._selected
+
+    def get_updated_recent(self) -> list:
+        return self._recent
+
 
 # ---------------------------------------------------------------------------
 # Per-object editor widget
@@ -184,17 +538,15 @@ class ObjectFieldWidget(QGroupBox):
         self._obj = obj
         self.fields: dict[tuple, QDoubleSpinBox] = {}
 
-        SPIN_W = 115
         CELL_H = 24
-        BTN_W  = 90
 
         grid = QGridLayout()
         grid.setContentsMargins(6, 6, 6, 6)
         grid.setSpacing(3)
-        grid.setColumnMinimumWidth(0, 72)
-        grid.setColumnMinimumWidth(1, SPIN_W)
-        grid.setColumnMinimumWidth(2, BTN_W)
-        grid.setColumnMinimumWidth(3, BTN_W)
+        grid.setColumnStretch(0, 1)
+        grid.setColumnStretch(1, 1)
+        grid.setColumnStretch(2, 1)
+        grid.setColumnStretch(3, 1)
 
         def _spin(section, key):
             lo, hi, step, dec = _SPIN_CFG[section]
@@ -202,7 +554,8 @@ class ObjectFieldWidget(QGroupBox):
             s.setRange(lo, hi)
             s.setSingleStep(step)
             s.setDecimals(dec)
-            s.setFixedSize(SPIN_W, CELL_H)
+            s.setFixedHeight(CELL_H)
+            s.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
             s.setValue(float(obj[section][key]))
             if on_change:
                 s.valueChanged.connect(lambda _: on_change())
@@ -210,7 +563,8 @@ class ObjectFieldWidget(QGroupBox):
 
         def _btn(text, slot):
             b = QPushButton(text)
-            b.setFixedSize(BTN_W, CELL_H)
+            b.setFixedHeight(CELL_H)
+            b.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
             b.setStyleSheet("min-height: 0; padding: 0;")
             b.clicked.connect(slot)
             if on_change:
@@ -239,7 +593,7 @@ class ObjectFieldWidget(QGroupBox):
         return result
 
     def clear_highlights(self):
-        pass  # QDoubleSpinBox self-validates; nothing to clear
+        pass
 
     def swap_wh(self):
         tmp = self.fields[("dimensions", "width")].value()
@@ -275,19 +629,16 @@ class AddObjectDialog(QDialog):
         form = QFormLayout()
         form.setSpacing(6)
 
-        # Object type selector
         self._combo = QComboBox()
         self._combo.addItems(DROPDOWN_OPTIONS)
         self._combo.currentTextChanged.connect(self._on_type_changed)
         form.addRow("Object type:", self._combo)
 
-        # Custom name field (hidden by default)
         self._custom_name = QLineEdit()
         self._custom_name.setPlaceholderText("Enter custom name…")
         self._custom_name.hide()
         form.addRow("Custom name:", self._custom_name)
 
-        # Dimension fields
         self._f_length = QLineEdit("0.000")
         self._f_width  = QLineEdit("0.000")
         self._f_height = QLineEdit("0.000")
@@ -295,7 +646,6 @@ class AddObjectDialog(QDialog):
         form.addRow("Width  (m):", self._f_width)
         form.addRow("Height (m):", self._f_height)
 
-        # Centroid fields
         self._f_cx = QLineEdit("0.000")
         self._f_cy = QLineEdit("0.000")
         self._f_cz = QLineEdit("0.000")
@@ -303,7 +653,6 @@ class AddObjectDialog(QDialog):
         form.addRow("Centroid Y:", self._f_cy)
         form.addRow("Centroid Z:", self._f_cz)
 
-        # Rotation fields
         self._f_rx = QLineEdit("0.000")
         self._f_ry = QLineEdit("0.000")
         self._f_rz = QLineEdit("0.000")
@@ -319,7 +668,6 @@ class AddObjectDialog(QDialog):
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
 
-        # Pre-fill first option
         self._on_type_changed(DROPDOWN_OPTIONS[0])
 
     def _on_type_changed(self, text: str):
@@ -387,40 +735,94 @@ class AddObjectDialog(QDialog):
 
 
 # ---------------------------------------------------------------------------
+# Background worker for the batch processing loop in _on_auto_bbox
+# ---------------------------------------------------------------------------
+class _BatchWorker(QThread):
+    frame_started   = pyqtSignal(int, str)   # (frame_idx, frame_id)
+    object_progress = pyqtSignal(int, int)   # (det_idx, total)
+    batch_done      = pyqtSignal(list, int)  # (current_frame_objects, total_saved)
+
+    def __init__(self, run_fn):
+        super().__init__()
+        self._run_fn = run_fn
+
+    def run(self):
+        self._run_fn(self)
+
+
+# ---------------------------------------------------------------------------
+# Dual progress dialog used by _on_auto_bbox
+# ---------------------------------------------------------------------------
+class _AutoBBoxProgressDialog(QDialog):
+    def __init__(self, n_frames: int, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Autonomous 3D BB Generation")
+        self.setWindowFlags(Qt.Dialog | Qt.WindowTitleHint | Qt.CustomizeWindowHint)
+        self.setFixedWidth(440)
+
+        layout = QVBoxLayout(self)
+        layout.setSpacing(8)
+
+        self._frame_label = QLabel("Starting…")
+        layout.addWidget(self._frame_label)
+        self._frame_bar = QProgressBar()
+        self._frame_bar.setRange(0, n_frames)
+        self._frame_bar.setValue(0)
+        layout.addWidget(self._frame_bar)
+
+        self._obj_label = QLabel("Objects: —")
+        layout.addWidget(self._obj_label)
+        self._obj_bar = QProgressBar()
+        self._obj_bar.setRange(0, 1)
+        self._obj_bar.setValue(0)
+        layout.addWidget(self._obj_bar)
+
+    def set_frame(self, idx: int, frame_id: str):
+        total = self._frame_bar.maximum()
+        self._frame_label.setText(f"Frame {idx + 1} / {total}:  {frame_id}")
+        self._frame_bar.setValue(idx + 1)
+        self._obj_bar.setValue(0)
+        self._obj_bar.setRange(0, 1)
+        self._obj_label.setText("Objects: detecting…")
+        QApplication.processEvents()
+
+    def set_object(self, idx: int, total: int):
+        self._obj_bar.setRange(0, total)
+        self._obj_bar.setValue(idx + 1)
+        self._obj_label.setText(f"Object {idx + 1} / {total}")
+        QApplication.processEvents()
+
+
+# ---------------------------------------------------------------------------
 # Main window
 # ---------------------------------------------------------------------------
 class LabelEditorWindow(QMainWindow):
 
-    DEFAULT_PCD_DIR    = "/home/tumwfml-ubunt6/3D_object_detection/rd_test_dataset/Azure_Kinect_dataset/pcd_colored"
-    DEFAULT_LABELS_DIR = "/home/tumwfml-ubunt6/3D_object_detection/rd_test_dataset/Azure_Kinect_dataset/3d_labels"
-
     def __init__(self):
         super().__init__()
-        self.pcd_dir: str | None = None
-        self.labels_dir: str | None = None
-        self.current_frame_id: str | None = None
+        self.pcd_dir:            str | None = None
+        self.labels_dir:         str | None = None
+        self.rgb_dir:            str | None = None
+        self.depth_dir:          str | None = None
+        self.camera_params_dir:  str | None = None
+        self.current_frame_id:   str | None = None
         self.current_label_data: dict | None = None
-        self.current_objects: list = []
-        self._selected_obj_idx: int = -1
-        self._active_widget: ObjectFieldWidget | None = None
+        self.current_objects:    list = []
+        self._selected_obj_idx:  int = -1
+        self._active_widget:     ObjectFieldWidget | None = None
         self._dirty = False
+        self._cfg = load_config()
+        self._orig_pixmap = None
 
         self.setWindowTitle("3D Label Editor")
         self.resize(1500, 900)
         self._build_ui()
-        self._preload_defaults()
+        self._auto_load_last_project()
 
-    def _preload_defaults(self):
-        if os.path.isdir(self.DEFAULT_PCD_DIR):
-            self.pcd_dir = self.DEFAULT_PCD_DIR
-            self._pcd_dir_label.setText(f"PCD: {os.path.basename(self.pcd_dir)}")
-        if os.path.isdir(self.DEFAULT_LABELS_DIR):
-            self.labels_dir = self.DEFAULT_LABELS_DIR
-            self._lbl_dir_label.setText(f"Labels: {os.path.basename(self.labels_dir)}")
-        if self.pcd_dir and self.labels_dir:
-            self._populate_file_list()
-            if self.file_list.count() > 0:
-                self.file_list.setCurrentRow(0)
+    def _auto_load_last_project(self):
+        recent = self._cfg.get("recent_projects", [])
+        if recent:
+            self._apply_project(recent[0])
 
     # ------------------------------------------------------------------
     # UI construction
@@ -439,26 +841,31 @@ class LabelEditorWindow(QMainWindow):
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(6)
 
-        btn_pcd = QPushButton("Browse PCD folder")
-        btn_pcd.clicked.connect(self._on_browse_pcd)
-        layout.addWidget(btn_pcd)
+        load_btn = QPushButton("Load Project…")
+        load_btn.clicked.connect(self._on_load_project)
+        layout.addWidget(load_btn)
 
-        self._pcd_dir_label = QLabel("PCD folder: not set")
-        self._pcd_dir_label.setWordWrap(True)
-        layout.addWidget(self._pcd_dir_label)
+        self._project_label = QLabel("No project loaded")
+        self._project_label.setWordWrap(True)
+        self._project_label.setStyleSheet("color: #888; font-size: 11px;")
+        layout.addWidget(self._project_label)
 
-        btn_lbl = QPushButton("Browse Labels folder")
-        btn_lbl.clicked.connect(self._on_browse_labels)
-        layout.addWidget(btn_lbl)
+        layout.addWidget(QLabel("PCD / PLY files:"))
+        self._select_all_cb = QCheckBox("Select all")
+        self._select_all_cb.setTristate(True)
+        self._select_all_cb.clicked.connect(self._on_select_all_clicked)
+        layout.addWidget(self._select_all_cb)
 
-        self._lbl_dir_label = QLabel("Labels folder: not set")
-        self._lbl_dir_label.setWordWrap(True)
-        layout.addWidget(self._lbl_dir_label)
-
-        layout.addWidget(QLabel("PCD files:"))
         self.file_list = QListWidget()
         self.file_list.currentItemChanged.connect(self._on_file_selected)
+        self.file_list.itemChanged.connect(self._on_item_check_changed)
         layout.addWidget(self.file_list)
+
+        self._auto_btn = QPushButton("Autonomous 3D BB Generation")
+        self._auto_btn.clicked.connect(self._on_auto_bbox)
+        self._auto_btn.setEnabled(False)
+        self._auto_btn.setToolTip("Check one or more files in the list to enable")
+        layout.addWidget(self._auto_btn)
 
         return w
 
@@ -492,25 +899,60 @@ class LabelEditorWindow(QMainWindow):
 
     def _build_right_panel(self) -> QWidget:
         w = QWidget()
-        layout = QVBoxLayout(w)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(6)
+        w_layout = QVBoxLayout(w)
+        w_layout.setContentsMargins(8, 8, 8, 8)
+        w_layout.setSpacing(0)
 
-        layout.addWidget(QLabel("Objects:"))
+        self._right_splitter = QSplitter(Qt.Vertical)
+        self._right_splitter.setChildrenCollapsible(False)
+        self._right_splitter.setHandleWidth(2)
+
+        # ── Panel 1: Objects ───────────────────────────────────────────────
+        self._obj_panel = QWidget()
+        obj_layout = QVBoxLayout(self._obj_panel)
+        obj_layout.setContentsMargins(0, 0, 0, 0)
+        obj_layout.setSpacing(4)
+
+        obj_layout.addWidget(QLabel("Objects:"))
         self.object_list = QListWidget()
-        self.object_list.setFixedHeight(110)
         self.object_list.currentRowChanged.connect(self._on_object_selected)
-        layout.addWidget(self.object_list)
+        obj_layout.addWidget(self.object_list)
 
+        obj_btn_row = QHBoxLayout()
         add_btn = QPushButton("+ Add Object")
         add_btn.clicked.connect(self._on_add_object)
-        layout.addWidget(add_btn)
+        obj_btn_row.addWidget(add_btn)
+        remove_btn = QPushButton("− Remove Object")
+        remove_btn.clicked.connect(self._on_remove_object)
+        obj_btn_row.addWidget(remove_btn)
+        obj_layout.addLayout(obj_btn_row)
+
+        self._right_splitter.addWidget(self._obj_panel)
+
+        # ── Panel 2: BB dimensions ─────────────────────────────────────────
+        self._fields_panel = QWidget()
+        fields_outer = QVBoxLayout(self._fields_panel)
+        fields_outer.setContentsMargins(0, 0, 0, 0)
+        fields_outer.setSpacing(0)
 
         self._fields_container = QWidget()
         self._fields_layout = QVBoxLayout(self._fields_container)
         self._fields_layout.setAlignment(Qt.AlignTop)
         self._fields_layout.setSpacing(8)
-        layout.addWidget(self._fields_container)
+
+        fields_scroll = QScrollArea()
+        fields_scroll.setWidget(self._fields_container)
+        fields_scroll.setWidgetResizable(True)
+        fields_scroll.setFrameShape(QFrame.NoFrame)
+        fields_outer.addWidget(fields_scroll)
+
+        self._right_splitter.addWidget(self._fields_panel)
+
+        # ── Panel 3: Save buttons + RGB image ──────────────────────────────
+        self._bottom_panel = QWidget()
+        bottom_layout = QVBoxLayout(self._bottom_panel)
+        bottom_layout.setContentsMargins(0, 4, 0, 0)
+        bottom_layout.setSpacing(4)
 
         bottom_row = QHBoxLayout()
         swap_all_btn = QPushButton("Swap All W↔H")
@@ -519,61 +961,117 @@ class LabelEditorWindow(QMainWindow):
         save_btn = QPushButton("Save JSON")
         save_btn.clicked.connect(self._on_save)
         bottom_row.addWidget(save_btn)
-        layout.addLayout(bottom_row)
-        layout.addStretch(1)
+        bottom_layout.addLayout(bottom_row)
 
+        bottom_layout.addWidget(QLabel("RGB image:"))
+        self._image_label = QLabel("No image loaded")
+        self._image_label.setAlignment(Qt.AlignCenter)
+        self._image_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        self._image_label.setStyleSheet(
+            "background-color: #252526; border: 1px solid #3c3c3c; color: #555;"
+        )
+        bottom_layout.addWidget(self._image_label, stretch=1)
+
+        self._right_splitter.addWidget(self._bottom_panel)
+
+        w_layout.addWidget(self._right_splitter)
         return w
+
+    # ------------------------------------------------------------------
+    # Project loading
+    # ------------------------------------------------------------------
+    def _on_load_project(self):
+        recent = self._cfg.get("recent_projects", [])
+        dlg = LoadProjectDialog(recent, parent=self)
+        dlg.setStyleSheet(self.styleSheet())
+        result = dlg.exec_()
+        # Always persist edits/deletions, even if the user cancels
+        self._cfg["recent_projects"] = dlg.get_updated_recent()
+        save_config(self._cfg)
+        if result != QDialog.Accepted:
+            return
+        project = dlg.get_project()
+        if not project:
+            return
+        self._apply_project(project)
+
+    def _apply_project(self, project: dict):
+        pcd_dir    = project.get("pcd_dir", "")
+        labels_dir = project.get("labels_dir", "")
+        if not os.path.isdir(pcd_dir):
+            QMessageBox.warning(self, "Folder not found", f"PCD folder not found:\n{pcd_dir}")
+            return
+        self.pcd_dir    = pcd_dir
+        self.labels_dir = labels_dir if os.path.isdir(labels_dir) else None
+        rgb_dir         = project.get("rgb_dir", "")
+        self.rgb_dir    = rgb_dir if os.path.isdir(rgb_dir) else None
+        depth_dir       = project.get("depth_dir", "")
+        self.depth_dir  = depth_dir if os.path.isdir(depth_dir) else None
+        cam_dir         = project.get("camera_params_dir", "")
+        self.camera_params_dir = cam_dir if os.path.isdir(cam_dir) else None
+
+        project_name = project.get("name", "").strip()
+        pcd_name  = os.path.basename(pcd_dir)
+        lbl_name  = os.path.basename(labels_dir) if self.labels_dir else "—"
+        rgb_name  = os.path.basename(rgb_dir) if self.rgb_dir else "—"
+        dep_name  = os.path.basename(depth_dir) if self.depth_dir else "—"
+        cam_name  = os.path.basename(cam_dir) if self.camera_params_dir else "—"
+        header = f"{project_name}\n" if project_name else ""
+        self._project_label.setText(
+            f"{header}PCD: {pcd_name}\nLabels: {lbl_name}\nRGB: {rgb_name}\n"
+            f"Depth: {dep_name}\nParams: {cam_name}"
+        )
+
+        # Save this project as most-recent (preserving name)
+        push_recent_project(self._cfg, project.get("name", ""), pcd_dir, labels_dir,
+                            rgb_dir, depth_dir, cam_dir)
+        save_config(self._cfg)
+
+        self._populate_file_list()
+        if self.file_list.count() > 0:
+            self.file_list.setCurrentRow(0)
 
     # ------------------------------------------------------------------
     # Slots
     # ------------------------------------------------------------------
-    def _on_browse_pcd(self):
-        path = QFileDialog.getExistingDirectory(self, "Select PCD folder")
-        if path:
-            self.pcd_dir = path
-            self._pcd_dir_label.setText(f"PCD: {os.path.basename(path)}")
-            self._populate_file_list()
-
-    def _on_browse_labels(self):
-        path = QFileDialog.getExistingDirectory(self, "Select Labels folder")
-        if path:
-            self.labels_dir = path
-            self._lbl_dir_label.setText(f"Labels: {os.path.basename(path)}")
-            self._populate_file_list()
-
     def _populate_file_list(self):
         if not self.pcd_dir:
             return
-        files = sorted(f for f in os.listdir(self.pcd_dir) if f.endswith(".pcd"))
+        files = sorted(f for f in os.listdir(self.pcd_dir)
+                       if f.endswith(".pcd") or f.endswith(".ply"))
+        self._select_all_cb.blockSignals(True)
+        self._select_all_cb.setCheckState(Qt.Unchecked)
+        self._select_all_cb.blockSignals(False)
         self.file_list.blockSignals(True)
         self.file_list.clear()
         for f in files:
-            self.file_list.addItem(f)
+            item = QListWidgetItem(f)
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+            item.setCheckState(Qt.Unchecked)
+            self.file_list.addItem(item)
         self.file_list.blockSignals(False)
-        self._update_status(f"Found {len(files)} PCD files")
+        self._update_status(f"Found {len(files)} point cloud files")
 
     def _on_file_selected(self, item: QListWidgetItem | None):
         if item is None:
             return
-        self._load_frame(item.text().replace(".pcd", ""))
+        self._load_frame(os.path.splitext(item.text())[0])
 
     def _load_frame(self, frame_id: str):
-        if self._dirty:
-            reply = QMessageBox.question(
-                self, "Unsaved changes",
-                f"'{self.current_frame_id}' has unsaved changes.\nLoad '{frame_id}' anyway?",
-                QMessageBox.Yes | QMessageBox.No,
-            )
-            if reply == QMessageBox.No:
-                return
-
-        if not self.pcd_dir:
-            self._update_status("Please select a PCD folder first")
+        if self._dirty and not self._check_unsaved():
             return
 
-        pcd_path = os.path.join(self.pcd_dir, f"{frame_id}.pcd")
-        if not os.path.exists(pcd_path):
-            QMessageBox.warning(self, "Missing PCD", f"PCD file not found:\n{pcd_path}")
+        if not self.pcd_dir:
+            self._update_status("Please load a project first")
+            return
+
+        pcd_path = next(
+            (os.path.join(self.pcd_dir, f"{frame_id}{ext}") for ext in (".pcd", ".ply")
+             if os.path.exists(os.path.join(self.pcd_dir, f"{frame_id}{ext}"))),
+            None,
+        )
+        if pcd_path is None:
+            QMessageBox.warning(self, "Missing file", f"No .pcd or .ply found for:\n{frame_id}")
             return
 
         if self.labels_dir:
@@ -596,6 +1094,7 @@ class LabelEditorWindow(QMainWindow):
         self.setWindowTitle(f"3D Label Editor — {frame_id}")
         self._sync_file_list_selection(frame_id)
         self._render_scene()
+        self._load_rgb_image(frame_id)
         self._update_status(f"{frame_id} — {len(self.current_objects)} object(s)")
 
     def _rebuild_object_panel(self):
@@ -609,7 +1108,7 @@ class LabelEditorWindow(QMainWindow):
         self._selected_obj_idx = -1
 
         if self.current_objects:
-            self.object_list.setCurrentRow(0)   # triggers _on_object_selected
+            self.object_list.setCurrentRow(0)
 
     def _clear_active_widget(self):
         if self._active_widget is not None:
@@ -619,7 +1118,6 @@ class LabelEditorWindow(QMainWindow):
             self._active_widget = None
 
     def _sync_active(self) -> str | None:
-        """Flush active widget values into current_objects. Returns error string or None."""
         if self._active_widget is None or self._selected_obj_idx < 0:
             return None
         result = self._active_widget.get_values()
@@ -631,7 +1129,6 @@ class LabelEditorWindow(QMainWindow):
     def _on_object_selected(self, row: int):
         if row < 0 or row >= len(self.current_objects):
             return
-        # Sync old widget before switching
         self._sync_active()
         self._selected_obj_idx = row
         self._clear_active_widget()
@@ -659,7 +1156,13 @@ class LabelEditorWindow(QMainWindow):
         if self.current_frame_id is None or not self.pcd_dir:
             return
 
-        pcd_path = os.path.join(self.pcd_dir, f"{self.current_frame_id}.pcd")
+        pcd_path = next(
+            (os.path.join(self.pcd_dir, f"{self.current_frame_id}{ext}") for ext in (".pcd", ".ply")
+             if os.path.exists(os.path.join(self.pcd_dir, f"{self.current_frame_id}{ext}"))),
+            None,
+        )
+        if pcd_path is None:
+            return
         try:
             pcd_o3d = o3d.io.read_point_cloud(pcd_path)
             pts = np.asarray(pcd_o3d.points)
@@ -674,7 +1177,7 @@ class LabelEditorWindow(QMainWindow):
                 else:
                     self.plotter.add_mesh(cloud, color="white", point_size=2, style="points")
         except Exception as e:
-            self._update_status(f"Error loading PCD: {e}")
+            self._update_status(f"Error loading point cloud: {e}")
             return
 
         for i, obj in enumerate(self.current_objects):
@@ -697,7 +1200,7 @@ class LabelEditorWindow(QMainWindow):
             return
         if not self.labels_dir:
             QMessageBox.warning(self, "No labels folder",
-                                "Please select a labels folder first.")
+                                "Please load a project with a labels folder first.")
             return
 
         dlg = AddObjectDialog(parent=self)
@@ -715,8 +1218,29 @@ class LabelEditorWindow(QMainWindow):
         self.object_list.blockSignals(False)
 
         self._dirty = True
-        self.object_list.setCurrentRow(new_idx)   # triggers _on_object_selected
+        self.object_list.setCurrentRow(new_idx)
         self._update_status(f"Added '{new_obj['name']}' — {len(self.current_objects)} object(s)")
+
+    def _on_remove_object(self):
+        row = self.object_list.currentRow()
+        if row < 0:
+            return
+        self._sync_active()
+        removed_name = self.current_objects[row]["name"]
+        del self.current_objects[row]
+        self.object_list.blockSignals(True)
+        self.object_list.takeItem(row)
+        for i in range(self.object_list.count()):
+            self.object_list.item(i).setText(f"[{i}]  {self.current_objects[i]['name']}")
+        self.object_list.blockSignals(False)
+        # Reset stale widget/index BEFORE setCurrentRow so _sync_active is a no-op
+        self._active_widget = None
+        self._selected_obj_idx = -1
+        self._dirty = True
+        new_row = min(row, self.object_list.count() - 1)
+        self.object_list.setCurrentRow(new_row)
+        self._render_scene()
+        self._update_status(f"Removed '{removed_name}' — {len(self.current_objects)} object(s)")
 
     def _on_save(self):
         if self.current_frame_id is None or not self.labels_dir:
@@ -757,7 +1281,6 @@ class LabelEditorWindow(QMainWindow):
         for obj in self.current_objects:
             obj["dimensions"]["width"], obj["dimensions"]["height"] = \
                 obj["dimensions"]["height"], obj["dimensions"]["width"]
-        # Refresh active widget to reflect the swap
         if 0 <= self._selected_obj_idx < len(self.current_objects):
             self._clear_active_widget()
             widget = ObjectFieldWidget(self._selected_obj_idx,
@@ -771,14 +1294,14 @@ class LabelEditorWindow(QMainWindow):
 
     def _on_random_frame(self):
         if not self.pcd_dir:
-            self._update_status("Please select a PCD folder first")
+            self._update_status("Please load a project first")
             return
-        available = [f.replace(".pcd", "") for f in os.listdir(self.pcd_dir) if f.endswith(".pcd")]
+        available = [os.path.splitext(f)[0] for f in os.listdir(self.pcd_dir)
+                     if f.endswith(".pcd") or f.endswith(".ply")]
         if available:
             self._load_frame(random.choice(available))
 
     def _check_unsaved(self) -> bool:
-        """Prompt to save if dirty. Returns True if navigation should proceed, False to cancel."""
         if not self._dirty:
             return True
         reply = QMessageBox.question(
@@ -809,18 +1332,319 @@ class LabelEditorWindow(QMainWindow):
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+    def _load_rgb_image(self, frame_id: str):
+        self._orig_pixmap = None
+        if not self.rgb_dir:
+            self._image_label.setText("No RGB folder set")
+            self._image_label.setPixmap(QPixmap())
+            return
+        path = _find_rgb_image(self.rgb_dir, frame_id)
+        if path is None:
+            self._image_label.setText(f"Image not found for {frame_id}")
+            self._image_label.setPixmap(QPixmap())
+            return
+        self._orig_pixmap = QPixmap(path)
+        self._image_label.setText("")
+        self._refresh_image_pixmap()
+
+    def _refresh_image_pixmap(self):
+        if self._orig_pixmap is None:
+            return
+        w = self._image_label.width()
+        h = self._image_label.height()
+        if w > 0 and h > 0:
+            self._image_label.setPixmap(
+                self._orig_pixmap.scaled(w, h, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            )
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        h = self._right_splitter.height()
+        self._right_splitter.setSizes([h * 3 // 10, h * 4 // 10, h * 3 // 10])
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._refresh_image_pixmap()
+
+    def _on_select_all_clicked(self, checked: bool):
+        new_state = Qt.Checked if checked else Qt.Unchecked
+        self._select_all_cb.blockSignals(True)
+        self._select_all_cb.setCheckState(new_state)
+        self._select_all_cb.blockSignals(False)
+        self.file_list.blockSignals(True)
+        for i in range(self.file_list.count()):
+            self.file_list.item(i).setCheckState(new_state)
+        self.file_list.blockSignals(False)
+        self._auto_btn.setEnabled(checked and self.file_list.count() > 0)
+
+    def _on_item_check_changed(self, _item):
+        count = self.file_list.count()
+        if count == 0:
+            return
+        n_checked = sum(
+            1 for i in range(count)
+            if self.file_list.item(i).checkState() == Qt.Checked
+        )
+        self._select_all_cb.blockSignals(True)
+        if n_checked == 0:
+            self._select_all_cb.setCheckState(Qt.Unchecked)
+        elif n_checked == count:
+            self._select_all_cb.setCheckState(Qt.Checked)
+        else:
+            self._select_all_cb.setCheckState(Qt.PartiallyChecked)
+        self._select_all_cb.blockSignals(False)
+        self._auto_btn.setEnabled(n_checked > 0)
+
+    def get_checked_frame_ids(self) -> list:
+        return [
+            os.path.splitext(self.file_list.item(i).text())[0]
+            for i in range(self.file_list.count())
+            if self.file_list.item(i).checkState() == Qt.Checked
+        ]
 
     def _sync_file_list_selection(self, frame_id: str):
-        target = f"{frame_id}.pcd"
-        for i in range(self.file_list.count()):
-            if self.file_list.item(i).text() == target:
-                self.file_list.blockSignals(True)
-                self.file_list.setCurrentRow(i)
-                self.file_list.blockSignals(False)
-                break
+        for ext in (".pcd", ".ply"):
+            target = f"{frame_id}{ext}"
+            for i in range(self.file_list.count()):
+                if self.file_list.item(i).text() == target:
+                    self.file_list.blockSignals(True)
+                    self.file_list.setCurrentRow(i)
+                    self.file_list.blockSignals(False)
+                    return
 
-    def _mark_dirty(self):
-        self._dirty = True
+    # ------------------------------------------------------------------
+    # Autonomous 3D BB generation
+    # ------------------------------------------------------------------
+    def _on_auto_bbox(self):
+        # 1. Collect target frames (checked, or fall back to current frame)
+        frame_ids = self.get_checked_frame_ids()
+        if not frame_ids:
+            if self.current_frame_id:
+                frame_ids = [self.current_frame_id]
+            else:
+                QMessageBox.warning(self, "No frame", "Please load a frame first.")
+                return
+
+        # 2. Validate required folders
+        missing = []
+        if not self.rgb_dir:
+            missing.append("RGB images folder")
+        if not self.depth_dir:
+            missing.append("Depth maps folder")
+        if not self.camera_params_dir:
+            missing.append("Camera parameters folder")
+        if not self.labels_dir:
+            missing.append("Labels folder")
+        if missing:
+            QMessageBox.warning(self, "Missing folders",
+                                "Please configure these project folders first:\n• " +
+                                "\n• ".join(missing))
+            return
+
+        from pose_estimation_pipeline import (
+            find_depth_file, find_camera_params_file,
+            load_intrinsics, apply_hist_depth_filter, estimate_3d_pose, make_label_object,
+        )
+        from auto_bbox_dialog import AutoBBoxValidationDialog
+
+        # 3. Process first frame with validation dialog
+        first_id = frame_ids[0]
+        rgb_path    = _find_rgb_image(self.rgb_dir, first_id) if self.rgb_dir else None
+        depth_path  = find_depth_file(self.depth_dir, first_id)
+        params_path = find_camera_params_file(self.camera_params_dir, first_id)
+
+        if not rgb_path:
+            QMessageBox.warning(self, "Missing file", f"No RGB image found for: {first_id}")
+            return
+        if not depth_path:
+            QMessageBox.warning(self, "Missing file", f"No depth file found for: {first_id}")
+            return
+        if not params_path:
+            QMessageBox.warning(self, "Missing file",
+                                f"No camera parameters file found for: {first_id}")
+            return
+
+        try:
+            rgb_img   = np.array(_PIL_Image.open(rgb_path).convert("RGB"))
+            depth_img = np.load(depth_path)
+            fx, fy, cx, cy = load_intrinsics(params_path)
+        except Exception as e:
+            QMessageBox.critical(self, "Load error", str(e))
+            return
+
+        # Detect Z-axis convention from point cloud (Z-backward = all-negative Z, e.g. ZED2 PLY)
+        # Use PyVista (already imported) instead of Open3D — handles more PLY variants.
+        z_backward = False
+        if self.pcd_dir:
+            for _ext in (".pcd", ".ply"):
+                _pc_path = os.path.join(self.pcd_dir, f"{first_id}{_ext}")
+                if os.path.exists(_pc_path):
+                    try:
+                        _pts = pv.read(_pc_path).points
+                        if len(_pts) > 0 and _pts[:, 2].max() < 0:
+                            z_backward = True
+                    except Exception:
+                        pass
+                    break
+
+        # Show validation dialog (segmentation runs inside the dialog)
+        dlg = AutoBBoxValidationDialog(
+            rgb_img, depth_img, fx, fy, cx, cy,
+            default_yolo_path=YOLO_MODEL_PATH, parent=self
+        )
+        dlg.setStyleSheet(self.styleSheet())
+        if dlg.exec_() != QDialog.Accepted or dlg.result is None:
+            return
+
+        detections = dlg._detections
+
+        hdf_params     = dlg._hdf_params
+        conf_threshold = dlg.conf_threshold
+
+        # ── helper: run pipeline on one detection, return label dict or None ──
+        def _process_detection(box, det_mask, dep_full, fx_i, fy_i, cx_i, cy_i, cls_name):
+            x1, y1, x2, y2 = box.astype(int)
+            dep_crop = dep_full[y1:y2, x1:x2].astype(float)
+            if dep_crop.size == 0:
+                return None
+            raw_mask = (det_mask.astype(np.uint8)[y1:y2, x1:x2]
+                        if det_mask is not None
+                        else np.ones(dep_crop.shape, dtype=np.uint8))
+            # Normalize to mm
+            valid_px = dep_crop[dep_crop > 0]
+            if valid_px.size > 0 and valid_px.max() <= 100:
+                dep_crop = dep_crop * 1000.0
+            dep_masked = np.where(raw_mask, dep_crop, 0)
+            filtered, *_ = apply_hist_depth_filter(
+                dep_masked,
+                resolution=hdf_params["resolution"],
+                max_height_percent=hdf_params["max_height_percent"],
+            )
+            mask_crop = (filtered > 0).astype(np.uint8)
+            try:
+                _, center, dims, yaw_deg, _ = estimate_3d_pose(
+                    filtered, mask_crop, x1, y1, fx_i, fy_i, cx_i, cy_i
+                )
+            except Exception:
+                return None
+            if z_backward:
+                center[1] = -center[1]
+                center[2] = -center[2]
+                yaw_deg   = -yaw_deg
+            return make_label_object(cls_name, center, dims, yaw_deg)
+
+        def _get_class_names(frame_detections):
+            if "class_name" in frame_detections.data:
+                return [str(n) for n in frame_detections.data["class_name"]]
+            return ["object"] * len(frame_detections)
+
+        def _get_masks(frame_detections):
+            if frame_detections.mask is not None:
+                return list(frame_detections.mask)
+            return [None] * len(frame_detections)
+
+        # ── batch worker runs all frame processing in a background thread ────
+        save_fn          = self._save_auto_result_to_file
+        current_fid_cap  = self.current_frame_id
+        rgb_dir_cap      = self.rgb_dir
+        depth_dir_cap    = self.depth_dir
+        params_dir_cap   = self.camera_params_dir
+
+        def _run_batch(worker):
+            current_frame_objs: list = []
+            total = 0
+            for frame_idx, fid in enumerate(frame_ids):
+                worker.frame_started.emit(frame_idx, fid)
+                try:
+                    if fid == first_id:
+                        rgb_f, dep_f = rgb_img, depth_img
+                        fx_f, fy_f, cx_f, cy_f = fx, fy, cx, cy
+                        frame_det = detections
+                    else:
+                        r_path = _find_rgb_image(rgb_dir_cap, fid)
+                        d_path = find_depth_file(depth_dir_cap, fid)
+                        p_path = find_camera_params_file(params_dir_cap, fid)
+                        if not r_path or not d_path or not p_path:
+                            continue
+                        rgb_f  = np.array(_PIL_Image.open(r_path).convert("RGB"))
+                        dep_f  = np.load(d_path)
+                        fx_f, fy_f, cx_f, cy_f = load_intrinsics(p_path)
+                        frame_det = dlg.run_on_image(rgb_f)
+
+                    if frame_det.confidence is not None:
+                        frame_det = frame_det[frame_det.confidence >= conf_threshold]
+                    if len(frame_det) == 0:
+                        continue
+
+                    cls_names  = _get_class_names(frame_det)
+                    masks      = _get_masks(frame_det)
+                    frame_objs: list = []
+
+                    for det_idx, (box, det_mask, cls_name) in enumerate(
+                            zip(frame_det.xyxy, masks, cls_names)):
+                        worker.object_progress.emit(det_idx, len(frame_det))
+                        obj = _process_detection(
+                            box, det_mask, dep_f, fx_f, fy_f, cx_f, cy_f, cls_name)
+                        if obj is not None:
+                            frame_objs.append(obj)
+
+                    if fid == current_fid_cap:
+                        current_frame_objs.extend(frame_objs)
+                    else:
+                        for obj in frame_objs:
+                            save_fn(fid, obj)
+
+                    total += len(frame_objs)
+                except Exception:
+                    continue
+
+            worker.batch_done.emit(current_frame_objs, total)
+
+        self._batch_prog    = _AutoBBoxProgressDialog(len(frame_ids), parent=self)
+        self._batch_n_frames = len(frame_ids)
+        self._batch_prog.show()
+
+        self._batch_worker = _BatchWorker(_run_batch)
+        self._batch_worker.frame_started.connect(self._batch_prog.set_frame)
+        self._batch_worker.object_progress.connect(self._batch_prog.set_object)
+        self._batch_worker.batch_done.connect(self._finish_batch)
+        self._batch_worker.start()
+
+    def _finish_batch(self, current_frame_objs: list, total_saved: int):
+        """Slot called on the main thread when _BatchWorker finishes."""
+        self._batch_prog.close()
+        self._sync_active()
+        self.object_list.blockSignals(True)
+        for obj in current_frame_objs:
+            self.current_objects.append(obj)
+            self.object_list.addItem(f"[{len(self.current_objects) - 1}]  {obj['name']}")
+        self.object_list.blockSignals(False)
+        if current_frame_objs:
+            self._dirty = True
+        self._render_scene()
+        self._update_status(
+            f"Done — {total_saved} object(s) saved across {self._batch_n_frames} frame(s)"
+        )
+
+    def _save_auto_result_to_file(self, frame_id: str, obj: dict):
+        """Append obj to the label JSON for frame_id (creates file if needed)."""
+        if not self.labels_dir:
+            return
+        os.makedirs(self.labels_dir, exist_ok=True)
+        label_path = os.path.join(self.labels_dir, f"{frame_id}.json")
+        if os.path.exists(label_path):
+            with open(label_path, "r") as f:
+                data = json.load(f)
+            data.setdefault("objects", []).append(obj)
+        else:
+            data = {
+                "folder":   os.path.basename(self.labels_dir),
+                "filename": f"{frame_id}.pcd",
+                "path":     os.path.join(self.pcd_dir or "", f"{frame_id}.pcd"),
+                "objects":  [obj],
+            }
+        with open(label_path, "w") as f:
+            json.dump(data, f, indent="\t")
 
     def _update_status(self, msg: str):
         self.statusBar().showMessage(msg)
